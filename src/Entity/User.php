@@ -55,6 +55,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
+        // $this->roles[] = 'ROLE_USER';
         $this->transactions = new ArrayCollection();
         $this->coinTransactions = new ArrayCollection();
         $this->userNovels = new ArrayCollection();
