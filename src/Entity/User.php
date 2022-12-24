@@ -2,15 +2,16 @@
 
 namespace App\Entity;
 
-use App\Repository\UserRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use App\Repository\UserRepository;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Security\User\JWTUserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-class User implements UserInterface, PasswordAuthenticatedUserInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -61,9 +62,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->userNovels = new ArrayCollection();
     }
 
+    public static function createFromPayload($id, array $payload)
+    {
+        // payload come from src\EventSubscriber\JWTSubscriber.php
+        $user = new User();
+        $user->setId($id);
+        $user->setEmail($payload["email"]);
+        return $user;
+    }
+
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    private function setId(int $id): self
+    {
+        $this->id = $id;
+        return $this;
     }
 
     public function getEmail(): ?string
