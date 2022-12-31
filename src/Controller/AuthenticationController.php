@@ -74,7 +74,9 @@ class AuthenticationController extends AbstractController
 
         return new JsonResponse(
             $userFiltered,
-            JsonResponse::HTTP_CREATED
+            JsonResponse::HTTP_OK
         );
     }
+
+    // Hidden Route /token/refresh To refresh token required refresh_token in body
 }

@@ -29,7 +29,11 @@ security:
             pattern:   ^/api
             provider: jwt
             stateless: true
+            entry_point: jwt
             jwt: ~
+            refresh_jwt:
+                check_path: /api/token/refresh
+                provider: app_user_provider
         # main:
         #     lazy: true
         #     provider: app_user_provider
