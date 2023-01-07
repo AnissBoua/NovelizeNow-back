@@ -11,3 +11,9 @@ PHP 8
 ```sh
 composer install
 ```
+
+### Create JSON keys
+
+```sh
+php bin/console lexik:jwt:generate-keypair
+```
