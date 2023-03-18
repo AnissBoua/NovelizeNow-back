@@ -2,10 +2,12 @@
 
 namespace App\Entity;
 
-use App\Repository\ChapterRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\ChapterRepository;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ChapterRepository::class)]
 class Chapter
@@ -13,19 +15,27 @@ class Chapter
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["page:read", "chapter:read"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["page:read", "chapter:read"])]
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
     private ?string $status = null;
 
     #[ORM\ManyToOne(inversedBy: 'chapters')]
+    #[Groups(["chapter:read"])]
     private ?Novel $novel = null;
 
-    #[ORM\OneToMany(mappedBy: 'chapter', targetEntity: Page::class)]
+    #[ORM\OneToMany(mappedBy: 'chapter', targetEntity: Page::class, cascade: ['remove'])]
+    #[Groups(["chapter:read"])]
     private Collection $pages;
+
+    #[ORM\Column(type: Types::ARRAY, nullable: true)]
+    #[Groups(["chapter:read"])]
+    private array $pageState = [];
 
     public function __construct()
     {
@@ -99,6 +109,21 @@ class Chapter
                 $page->setChapter(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getPageState(): array
+    {
+        return $this->pageState;
+    }
+
+    /**
+     * @param int[] $integerArray
+     */
+    public function setPageState(?array $pageState): self
+    {
+        $this->pageState = $pageState;
 
         return $this;
     }
