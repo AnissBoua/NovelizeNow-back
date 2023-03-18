@@ -26,7 +26,7 @@ class PageController extends AbstractController
     }
 
     #[Route('/page', methods: ['POST'])]
-    public function createPage(Request $request){
+    public function createPage(Request $request, SerializerInterface $serializer){
         $data = json_decode($request->getContent(),true);
         $page = new Page();
         $page->setContent($data["content"]);
@@ -34,7 +34,8 @@ class PageController extends AbstractController
         $page->setChapter($this->chapterRepo->find($data["chapter"]));
         $this->em->persist($page);
         $this->em->flush();
-        return $this->json($page,201);
+        $json = $serializer->serialize($page, 'json', ['groups' => 'page:read']);
+        return new JsonResponse($json, 201, [], true);
     }
 
     #[Route('/page/{id}', methods: ['GET'])]
