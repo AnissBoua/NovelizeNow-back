@@ -17,11 +17,11 @@ class Page
     #[ORM\Column(type: Types::TEXT)]
     private ?string $content = null;
 
-    #[ORM\Column]
-    private ?int $pageNumber = null;
-
     #[ORM\ManyToOne(inversedBy: 'pages')]
     private ?Chapter $chapter = null;
+
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $html = null;
 
     public function getId(): ?int
     {
@@ -40,18 +40,6 @@ class Page
         return $this;
     }
 
-    public function getPageNumber(): ?int
-    {
-        return $this->pageNumber;
-    }
-
-    public function setPageNumber(int $pageNumber): self
-    {
-        $this->pageNumber = $pageNumber;
-
-        return $this;
-    }
-
     public function getChapter(): ?Chapter
     {
         return $this->chapter;
@@ -60,6 +48,18 @@ class Page
     public function setChapter(?Chapter $chapter): self
     {
         $this->chapter = $chapter;
+
+        return $this;
+    }
+
+    public function getHtml(): ?string
+    {
+        return $this->html;
+    }
+
+    public function setHtml(string $html): self
+    {
+        $this->html = $html;
 
         return $this;
     }
