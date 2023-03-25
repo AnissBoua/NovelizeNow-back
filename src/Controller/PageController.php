@@ -41,6 +41,9 @@ class PageController extends AbstractController
     #[Route('/page/{id}', methods: ['GET'])]
     public function getPage(int $id, SerializerInterface $serializer){
         $page = $this->pageRepo->find($id);
+        if (!$page) {
+            return $this->json(['error' => 'No found id: '. $id], 404);
+        }
         $json = $serializer->serialize($page, 'json', ['groups' => 'page:read']);
         return new JsonResponse($json, 200, [], true);
     }
@@ -49,6 +52,9 @@ class PageController extends AbstractController
     public function updatePage(int $id, Request $request, SerializerInterface $serializer){
         $data = json_decode($request->getContent(),true);
         $page = $this->pageRepo->find($id);
+        if (!$page) {
+            return $this->json(['error' => 'No found id: '. $id], 404);
+        }
         $page->setContent($data["content"]);
         $page->setHtml($data["html"]);
         $chapter = $this->chapterRepo->find($data["chapter"]);
@@ -62,6 +68,9 @@ class PageController extends AbstractController
     #[Route('/page/{id}', methods: ['DELETE'])]
     public function deletePage(int $id){
         $page = $this->pageRepo->find($id);
+        if (!$page) {
+            return $this->json(['error' => 'No found id: '. $id], 404);
+        }
         $this->em->remove($page);
         $this->em->flush();
         return new Response("no content", 204);
