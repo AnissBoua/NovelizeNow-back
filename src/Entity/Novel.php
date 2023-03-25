@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: NovelRepository::class)]
 class Novel
@@ -14,9 +15,11 @@ class Novel
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["novel:get", "novel:edit"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["novel:get", "novel:edit"])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -32,9 +35,10 @@ class Novel
     private Collection $novelImages;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Chapter::class)]
+    #[Groups(["novel:get", "novel:edit"])]
     private Collection $chapters;
 
-    #[ORM\OneToMany(mappedBy: 'novel', targetEntity: UserNovel::class)]
+    #[ORM\OneToMany(mappedBy: 'novel', targetEntity: UserNovel::class, cascade: ['remove'])]
     private Collection $userNovels;
 
     public function __construct()

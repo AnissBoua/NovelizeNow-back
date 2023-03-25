@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\UserNovelRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: UserNovelRepository::class)]
 class UserNovel
@@ -11,10 +12,12 @@ class UserNovel
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["novel:edit"])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $relation = null;
+    #[ORM\Column( type: 'string', columnDefinition:"ENUM('author')")]
+    #[Groups(["novel:edit"])]
+    private string $relation;
 
     #[ORM\ManyToOne(inversedBy: 'userNovels')]
     private ?User $user = null;

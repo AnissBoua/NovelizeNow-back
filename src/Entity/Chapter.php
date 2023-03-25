@@ -15,11 +15,11 @@ class Chapter
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["page:read", "chapter:read"])]
+    #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["page:read", "chapter:read"])]
+    #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit"])]
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
@@ -30,7 +30,7 @@ class Chapter
     private ?Novel $novel = null;
 
     #[ORM\OneToMany(mappedBy: 'chapter', targetEntity: Page::class, cascade: ['remove'])]
-    #[Groups(["chapter:read"])]
+    #[Groups(["chapter:read", "novel:get"])]
     private Collection $pages;
 
     #[ORM\Column(type: Types::ARRAY, nullable: true)]

@@ -3,9 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\Chapter;
+use App\Middleware\NovelRelationMiddleware;
 use App\Repository\NovelRepository;
 use App\Repository\ChapterRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
+use Symfony\Bundle\SecurityBundle\Security as SecurityAuth;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -19,19 +22,25 @@ class ChapterController extends AbstractController
     private $chapterRepo;
     private $novelRepo;
 
-    public function __construct(EntityManagerInterface $em, ChapterRepository $chapterRepo , NovelRepository $novelRepo){
+    public function __construct(EntityManagerInterface $em, ChapterRepository $chapterRepo , NovelRepository $novelRepo, NovelRelationMiddleware $novelRelationMiddleware , private SecurityAuth $security){
         $this->em = $em;
         $this->chapterRepo = $chapterRepo;
         $this->novelRepo = $novelRepo;
+        $this->novelRelationMiddleware = $novelRelationMiddleware;
     }
 
-    #[Route('/chapter', methods: ['POST'])]
+    #[Route('/chapter', methods: ['POST']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
     public function createChapter(Request $request, SerializerInterface $serializer){
         $data = json_decode($request->getContent(),true);
         $chapter = new Chapter();
+        $novel = $this->novelRepo->find($data["novel"]);
+        $user = $this->security->getUser();
+        
+        if (!$this->novelRelationMiddleware->isUserAuthorized($novel, $user)) {
+            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
+        }
         $chapter->setTitle($data["title"]);
         $chapter->setStatus($data["status"]);
-        $novel = $this->novelRepo->find($data["novel"]);
         $chapter->setNovel($novel);
         $this->em->persist($chapter);
         $this->em->flush();
@@ -49,13 +58,21 @@ class ChapterController extends AbstractController
         return new JsonResponse($json, 200, [], true);
     }
 
-    #[Route('/chapter/{id}', methods: ['PUT'])]
+    #[Route('/chapter/{id}', methods: ['PUT']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
     public function updateChapter(int $id, Request $request, SerializerInterface $serializer){
         $data = json_decode($request->getContent(),true);
         $chapter = $this->chapterRepo->find($id);
         if (!$chapter) {
             return $this->json(['error' => 'No found id: '. $id], 404);
         }
+
+        $novel = $chapter->getNovel();
+        $user = $this->security->getUser();
+        
+        if (!$this->novelRelationMiddleware->isUserAuthorized($novel, $user)) {
+            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
+        }
+
         $chapter->setTitle($data["title"]);
         $chapter->setStatus($data["status"]);
         $chapter->setPageState($data["pageState"]);
@@ -65,12 +82,20 @@ class ChapterController extends AbstractController
         return new JsonResponse($json, 202, [], true);
     }
 
-    #[Route('/chapter/{id}', methods: ['DELETE'])]
-    public function deleteChapter(int $id){
+    #[Route('/chapter/{id}', methods: ['DELETE']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function deleteChapter(int $id, ){
         $chapter = $this->chapterRepo->find($id);
         if (!$chapter) {
             return $this->json(['error' => 'No found id: '. $id], 404);
         }
+
+        $novel = $chapter->getNovel();
+        $user = $this->security->getUser();
+
+        if (!$this->novelRelationMiddleware->isUserAuthorized($novel, $user)) {
+            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
+        }
+
         $this->em->remove($chapter);
         $this->em->flush();
         return new Response("no content", 204);
