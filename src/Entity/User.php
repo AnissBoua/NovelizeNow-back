@@ -6,6 +6,7 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Security\User\JWTUserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -31,9 +32,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["novel:get"])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["novel:get"])]
     private ?string $lastname = null;
 
     #[ORM\Column]
