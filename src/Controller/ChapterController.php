@@ -82,6 +82,18 @@ class ChapterController extends AbstractController
         return new JsonResponse($json, 202, [], true);
     }
 
+    // private function addPageToChapter(int $id){
+       
+    //     $chapter = $this->chapterRepo->find($id);
+        
+    //     $pageState = $chapter->getPageState();
+    //     $chapter->setPageState($data["newPageId"]);
+    //     $this->em->persist($chapter);
+    //     $this->em->flush();
+    //     $json = $serializer->serialize($chapter, 'json', ['groups' => 'chapter:read']);
+    //     return new JsonResponse($json, 202, [], true);
+    // }
+
     #[Route('/chapter/{id}', methods: ['DELETE']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
     public function deleteChapter(int $id, ){
         $chapter = $this->chapterRepo->find($id);

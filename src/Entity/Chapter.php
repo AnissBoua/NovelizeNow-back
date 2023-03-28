@@ -23,10 +23,11 @@ class Chapter
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["chapter:read"])]
     private ?string $status = null;
 
     #[ORM\ManyToOne(inversedBy: 'chapters')]
-    #[Groups(["chapter:read"])]
+    #[Groups(["chapter:read", "page:read"])]
     private ?Novel $novel = null;
 
     #[ORM\OneToMany(mappedBy: 'chapter', targetEntity: Page::class, cascade: ['remove'])]
@@ -34,7 +35,7 @@ class Chapter
     private Collection $pages;
 
     #[ORM\Column(type: Types::ARRAY, nullable: true)]
-    #[Groups(["chapter:read"])]
+    #[Groups(["chapter:read", "page:read"])]
     private array $pageState = [];
 
     public function __construct()
@@ -123,8 +124,7 @@ class Chapter
      */
     public function setPageState(?array $pageState): self
     {
-        $this->pageState = $pageState;
-
+        $this->pageState = $pageState ? array_values($pageState) : [];
         return $this;
     }
 }
