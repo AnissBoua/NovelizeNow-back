@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\NovelImageRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: NovelImageRepository::class)]
 class NovelImage
@@ -13,10 +14,12 @@ class NovelImage
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 100, nullable: true)]
+    #[ORM\Column( type: 'string', columnDefinition:"ENUM('cover', 'banner')")]
+    #[Groups(["novel:get", "novel:edit"])]
     private ?string $imgPosition = null;
 
     #[ORM\ManyToOne(inversedBy: 'novelImages')]
+    #[Groups(["novel:get", "novel:edit"])]
     private ?Image $image = null;
 
     #[ORM\ManyToOne(inversedBy: 'novelImages')]

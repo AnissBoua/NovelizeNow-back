@@ -22,6 +22,14 @@ class Novel
     #[Groups(["novel:get", "novel:edit"])]
     private ?string $title = null;
 
+    #[ORM\Column(length: 255)]
+    #[Groups(["novel:get", "novel:edit"])]
+    private ?string $slug = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(["novel:get", "novel:edit"])]
+    private ?string $resume = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $date_creation = null;
 
@@ -32,6 +40,7 @@ class Novel
     private Collection $categories;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: NovelImage::class)]
+    #[Groups(["novel:get", "novel:edit"])]
     private Collection $novelImages;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Chapter::class)]
@@ -203,6 +212,30 @@ class Novel
                 $userNovel->setNovel(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): self
+    {
+        $this->slug = $slug;
+
+        return $this;
+    }
+
+    public function getResume(): ?string
+    {
+        return $this->resume;
+    }
+
+    public function setResume(string $resume): self
+    {
+        $this->resume = $resume;
 
         return $this;
     }
