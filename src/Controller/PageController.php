@@ -45,6 +45,13 @@ class PageController extends AbstractController
         $page->setChapter($chapter);
         $this->em->persist($page);
         $this->em->flush();
+        $newPageId = $page->getId();
+        $pageState = $chapter->getPageState();
+        array_push($pageState,$newPageId);
+        $chapter->setPageState($pageState);
+        $this->em->persist($chapter);
+        $this->em->flush();
+        
         $json = $serializer->serialize($page, 'json', ['groups' => 'page:read']);
         return new JsonResponse($json, 201, [], true);
     }
@@ -98,6 +105,12 @@ class PageController extends AbstractController
             return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
         }
 
+        $chapter = $page->getChapter();
+        $pageState = $chapter->getPageState();
+        $indexOfPage = array_search($id, $pageState);
+        unset($pageState[$indexOfPage]);
+        $chapter->setPageState($pageState);
+        $this->em->persist($chapter);
         $this->em->remove($page);
         $this->em->flush();
         return new Response("no content", 204);

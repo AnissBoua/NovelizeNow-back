@@ -16,11 +16,11 @@ class Novel
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "chapter:read","page:read"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "chapter:read"])]
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
