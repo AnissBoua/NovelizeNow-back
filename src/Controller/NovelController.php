@@ -2,10 +2,14 @@
 
 namespace App\Controller;
 
+use App\Entity\Image;
 use DateTime;
 use App\Entity\Novel;
+use App\Entity\NovelImage;
 use App\Entity\UserNovel;
+use App\Middleware\FileUploadMiddleware;
 use App\Middleware\NovelRelationMiddleware;
+use App\Repository\CategoryRepository;
 use App\Repository\NovelRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -16,6 +20,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 #[Route('/novel')]
 class NovelController extends AbstractController
@@ -25,36 +30,71 @@ class NovelController extends AbstractController
         NovelRepository $novelRepository, 
         UserRepository $userRepository, 
         private SecurityAuth $security,
-        NovelRelationMiddleware $novelRelationMiddleware
+        NovelRelationMiddleware $novelRelationMiddleware,
+        FileUploadMiddleware $fileUploadMiddleware
     )
     {
         $this->em = $em;
         $this->novelRepository = $novelRepository;
         $this->userRepository = $userRepository;
         $this->novelRelationMiddleware = $novelRelationMiddleware;
+        $this->fileUploadMiddleware = $fileUploadMiddleware;
     }
 
     #[Route('/', name: 'new_novel', methods: ['POST']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
-    public function post(Request $request)
+    public function post(Request $request, CategoryRepository $categoryRepo, SerializerInterface $serializerInterface)
     {
-        $data = json_decode($request->getContent(), true);
+        // $data = json_decode($request->getContent(), true);
+        $data = $request->request;
+        $files = $request->files;
 
+        $cover = $files->get('cover');
+        $destination = $this->getParameter('kernel.project_dir').'/public/uploads/novels';
+        $cover = $this->fileUploadMiddleware->imageUpload($cover, $destination);
+
+        if (!$cover) {
+            return $this->json(["error" => "L'image que vous avez essayer de uploder n'a pas etais sauvegarder"], 404);
+        }
+
+        $slugger = new AsciiSlugger();
         $novel = new Novel;
-        $novel->setTitle($data['title']);
+        $novel->setTitle($data->get('title'));
+
+        $slug = $slugger->slug($data->get('title'));
+        $novel->setSlug($this->findSlug($slug));
+
+        $novel->setResume($data->get('resume'));
         $novel->setDateCreation(new DateTime());
-       
-        $user = $this->userRepository->find($this->security->getUser()->getId());
 
-        $user_novel = new UserNovel;
-        $user_novel->setNovel($novel);
-        $user_novel->setUser($user);
-        $user_novel->setRelation('author');
+        $categories = $data->all('category');
+        foreach ($categories as $category) {
+            $category = $categoryRepo->findOneBy(['id' => $category]);
+            $novel->addCategory($category);
+        }
 
-        $this->em->persist($novel);
-        $this->em->persist($user_novel);
-        $this->em->flush();
+        /** @var \App\Entity\User $user */
+        $user = $this->security->getUser();
+        $user = $this->userRepository->find($user->getId());
+
+        $userNovel = new UserNovel;
+        $userNovel->setNovel($novel);
+        $userNovel->setUser($user); 
+        $userNovel->setRelation('author');
+  
         
-        return $this->json(['response' => 'Created succesfully'], 201);
+        $novelImage = new NovelImage;
+        $novelImage->setImage($cover);
+        $novelImage->setNovel($novel);
+        $novelImage->setImgPosition('cover');
+
+        $novel->addNovelImage($novelImage);
+
+        $this->em->persist($novel); 
+        $this->em->persist($userNovel);
+        $this->em->persist($novelImage);
+        $this->em->flush();
+        $novel = $serializerInterface->serialize($novel, 'json', ['groups' => 'novel:get']);
+        return new JsonResponse($novel, 200,  [], true);
     }
 
     #[Route('/{id}', name: 'get_novel', methods: ['GET'])]
@@ -118,5 +158,19 @@ class NovelController extends AbstractController
         $this->em->flush();
 
         return $this->json(['response' => 'Deleted succesfully'], 200);
+    }
+
+
+    private function findSlug($slug, $int = 1){
+
+        if ($this->novelRepository->findOneBy(['slug' => $slug])) {
+            $newslug = $slug . '-' . $int;
+            if ($this->novelRepository->findOneBy(['slug' => $newslug])) {
+                $slug = $this->findSlug($slug, ($int + 1));
+            } else {
+                $slug = $slug . '-' . $int;
+            }
+        }
+        return $slug;
     }
 }
