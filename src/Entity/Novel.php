@@ -2,11 +2,12 @@
 
 namespace App\Entity;
 
-use App\Repository\NovelRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use App\Entity\User;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\NovelRepository;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: NovelRepository::class)]
@@ -192,6 +193,18 @@ class Novel
     public function getUserNovels(): Collection
     {
         return $this->userNovels;
+    }
+
+    #[Groups(["novel:get"])]
+    public function getAuthor()
+    {
+        $relatedUser = $this->userNovels;
+        foreach($relatedUser as $userNovel){
+            if($userNovel->getRelation() === "author"){
+                $user = $userNovel->getUser();
+            }
+        }
+        return $user;
     }
 
     public function addUserNovel(UserNovel $userNovel): self
