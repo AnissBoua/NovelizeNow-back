@@ -108,6 +108,17 @@ class NovelController extends AbstractController
         return new JsonResponse($novel, 200,  [], true);
     }
 
+    #[Route('/bySlug/{slug}', name: 'get_novel_by_slug', methods: ['GET'])]
+    public function getBySlug($slug, SerializerInterface $serializerInterface)
+    {
+        $novel = $this->novelRepository->findOneBy(['slug' => $slug]);
+        if (!$novel) {
+            return $this->json(['error' => 'No found id: '. $slug], 404);
+        }
+        $novel = $serializerInterface->serialize($novel, 'json', ['groups' => 'novel:get']);
+        return new JsonResponse($novel, 200,  [], true);
+    }
+
     #[Route('/', name: 'get_all_novel', methods: ['GET'])]
     public function getAll(SerializerInterface $serializerInterface)
     {
