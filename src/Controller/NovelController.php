@@ -60,7 +60,7 @@ class NovelController extends AbstractController
         $novel = new Novel;
         $novel->setTitle($data->get('title'));
 
-        $slug = $slugger->slug($data->get('title'));
+        $slug = $slugger->slug($data->get('title'))->lower();
         $novel->setSlug($this->findSlug($slug));
 
         $novel->setResume($data->get('resume'));

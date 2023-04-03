@@ -45,7 +45,7 @@ class Novel
     private Collection $novelImages;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Chapter::class)]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:edit"])]
     private Collection $chapters;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: UserNovel::class, cascade: ['remove'])]
@@ -57,6 +57,18 @@ class Novel
         $this->novelImages = new ArrayCollection();
         $this->chapters = new ArrayCollection();
         $this->userNovels = new ArrayCollection();
+    }
+
+    #[Groups(["novel:get"])]
+    public function getPublishedChapters()
+    {
+        $chapters = array();
+        foreach ($this->chapters as $chapter) {
+            if ($chapter->getStatus() === 'Published') {
+                array_push($chapters, $chapter);
+            }
+        }
+        return $chapters;
     }
 
     public function getId(): ?int
