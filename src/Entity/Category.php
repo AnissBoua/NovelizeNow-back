@@ -14,11 +14,11 @@ class Category
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["category:get", "category:post"])]
+    #[Groups(["category:get", "category:post", "novel:get", "novel:edit"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["category:get", "category:post"])]
+    #[Groups(["category:get", "category:post", "novel:get", "novel:edit"])]
     private ?string $name = null;
 
     #[ORM\ManyToMany(targetEntity: Novel::class, inversedBy: 'categories')]

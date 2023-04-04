@@ -17,7 +17,7 @@ class Image
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?string $filename = null;
 
     #[ORM\OneToMany(mappedBy: 'image', targetEntity: NovelImage::class)]

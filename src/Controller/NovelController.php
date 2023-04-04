@@ -2,25 +2,26 @@
 
 namespace App\Controller;
 
-use App\Entity\Image;
 use DateTime;
+use App\Entity\Image;
 use App\Entity\Novel;
-use App\Entity\NovelImage;
 use App\Entity\UserNovel;
-use App\Middleware\FileUploadMiddleware;
-use App\Middleware\NovelRelationMiddleware;
-use App\Repository\CategoryRepository;
-use App\Repository\NovelRepository;
+use App\Entity\NovelImage;
 use App\Repository\UserRepository;
+use App\Repository\NovelRepository;
+use App\Repository\CategoryRepository;
+use App\Middleware\FileUploadMiddleware;
+use App\Repository\NovelImageRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Middleware\NovelRelationMiddleware;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\String\Slugger\AsciiSlugger;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\SecurityBundle\Security as SecurityAuth;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\String\Slugger\AsciiSlugger;
 
 #[Route('/novel')]
 class NovelController extends AbstractController
@@ -31,7 +32,9 @@ class NovelController extends AbstractController
         UserRepository $userRepository, 
         private SecurityAuth $security,
         NovelRelationMiddleware $novelRelationMiddleware,
-        FileUploadMiddleware $fileUploadMiddleware
+        FileUploadMiddleware $fileUploadMiddleware,
+        NovelImageRepository $novelImageRepository,
+        CategoryRepository $categoryRepository
     )
     {
         $this->em = $em;
@@ -39,10 +42,12 @@ class NovelController extends AbstractController
         $this->userRepository = $userRepository;
         $this->novelRelationMiddleware = $novelRelationMiddleware;
         $this->fileUploadMiddleware = $fileUploadMiddleware;
+        $this->novelImageRepository = $novelImageRepository;
+        $this->categoryRepository = $categoryRepository;
     }
 
     #[Route('/', name: 'new_novel', methods: ['POST']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
-    public function post(Request $request, CategoryRepository $categoryRepo, SerializerInterface $serializerInterface)
+    public function post(Request $request, SerializerInterface $serializerInterface)
     {
         // $data = json_decode($request->getContent(), true);
         $data = $request->request;
@@ -53,7 +58,7 @@ class NovelController extends AbstractController
         $cover = $this->fileUploadMiddleware->imageUpload($cover, $destination);
 
         if (!$cover) {
-            return $this->json(["error" => "L'image que vous avez essayer de uploder n'a pas etais sauvegarder"], 404);
+            return $this->json(["error" => "L'image que vous avez essayer de uploder n'a pas etais sauvegarder"], 400);
         }
 
         $slugger = new AsciiSlugger();
@@ -68,7 +73,7 @@ class NovelController extends AbstractController
 
         $categories = $data->all('category');
         foreach ($categories as $category) {
-            $category = $categoryRepo->findOneBy(['id' => $category]);
+            $category = $this->categoryRepository->findOneBy(['id' => $category]);
             $novel->addCategory($category);
         }
 
@@ -88,6 +93,7 @@ class NovelController extends AbstractController
         $novelImage->setImgPosition('cover');
 
         $novel->addNovelImage($novelImage);
+        $novel->addUserNovel($userNovel);
 
         $this->em->persist($novel); 
         $this->em->persist($userNovel);
@@ -127,10 +133,12 @@ class NovelController extends AbstractController
         return new JsonResponse($novels, 200,  [], true);
     }
 
-    #[Route('/{id}', name: 'edit_novel', methods: ['PUT']),  Security("is_granted('IS_AUTHENTICATED_FULLY')")]
+    #[Route('/{id}', name: 'edit_novel', methods: ['POST']),  Security("is_granted('IS_AUTHENTICATED_FULLY')")]
     public function edit($id, Request $request, SerializerInterface $serializerInterface)
     {
-        $data = json_decode($request->getContent(), true);
+        // $data = json_decode($request->getContent(), true);
+        $data = $request->request;
+        $files = $request->files;
         
         $novel = $this->novelRepository->find($id);
         if (!$novel) {
@@ -143,7 +151,37 @@ class NovelController extends AbstractController
             return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
         }
 
-        $novel->setTitle($data['title']);
+        $novel->setTitle($data->get('title'));
+        $novel->setResume($data->get('resume'));
+        // handle update cover image
+        if ($files->get('cover')) {
+            $destination = $this->getParameter('kernel.project_dir').'/public/uploads/novels';
+            
+            $cover = $files->get('cover');
+            $cover = $this->fileUploadMiddleware->imageUpload($cover, $destination);
+            if (!$cover) {
+                return $this->json(["error" => "L'image que vous avez essayer de uploder n'a pas etais sauvegarder"], 400);
+            }
+
+            $novelImage = $novel->getNovelImages()->filter(function ($novelImage) {
+                return $novelImage->getImgPosition() === 'cover';
+            })->first();
+
+            $oldCover = $novelImage->getImage();
+            $this->fileUploadMiddleware->imageDelete($oldCover, $destination);
+            
+            $novelImage->setImage($cover);
+            $this->em->persist($novelImage);
+        }
+
+        $categories = $data->all('category');
+        foreach ($categories as $category) {
+            $category = $this->categoryRepository->findOneBy(['id' => $category]);
+            if (!$novel->getCategories()->contains($category)) {
+                $novel->addCategory($category);
+            }
+        }
+
         $novel->setDateUpdate(new DateTime());
         $this->em->persist($novel);
         $this->em->flush();
@@ -184,4 +222,6 @@ class NovelController extends AbstractController
         }
         return $slug;
     }
+
+    // TODO : logic for uploading any type of image (cover, banner, etc...), handle post request and edit request
 }

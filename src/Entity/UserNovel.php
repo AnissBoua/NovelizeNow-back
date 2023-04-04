@@ -12,17 +12,18 @@ class UserNovel
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["novel:edit"])]
+    #[Groups(["novel:edit", "user-novel:get"])]
     private ?int $id = null;
 
     #[ORM\Column( type: 'string', columnDefinition:"ENUM('author')")]
-    #[Groups(["novel:edit"])]
+    #[Groups(["novel:edit", "user-novel:get"])]
     private string $relation;
 
     #[ORM\ManyToOne(inversedBy: 'userNovels')]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'userNovels')]
+    #[Groups(["user-novel:get"])]
     private ?Novel $novel = null;
 
     public function getId(): ?int
