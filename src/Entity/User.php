@@ -32,11 +32,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get"])]
+    #[Groups(["novel:get", "user-novel:get"])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get"])]
+    #[Groups(["novel:get", "user-novel:get"])]
     private ?string $lastname = null;
 
     #[ORM\Column]

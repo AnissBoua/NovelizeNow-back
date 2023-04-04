@@ -15,11 +15,11 @@ class NovelImage
     private ?int $id = null;
 
     #[ORM\Column( type: 'string', columnDefinition:"ENUM('cover', 'banner')")]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?string $imgPosition = null;
 
     #[ORM\ManyToOne(inversedBy: 'novelImages')]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?Image $image = null;
 
     #[ORM\ManyToOne(inversedBy: 'novelImages')]

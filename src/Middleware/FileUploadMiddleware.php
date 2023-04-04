@@ -2,14 +2,15 @@
 
 namespace App\Middleware;
 
-use App\Entity\Image;
 use DateTime;
+use App\Entity\Image;
+use App\Repository\NovelImageRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 
 class FileUploadMiddleware {
 
-    public function __construct( EntityManagerInterface $em)
+    public function __construct(EntityManagerInterface $em, private NovelImageRepository $novelImageRepository)
     {
         $this->em = $em;
     }
@@ -38,5 +39,26 @@ class FileUploadMiddleware {
         $this->em->flush();
 
         return $image;
+    }
+
+    public function imageDelete(Image $image = null, $destination = null) : bool
+    {
+        if ($image === null) {
+            return false;
+        }
+
+        $filename = $image->getFilename();
+        
+        //remove from novelImages
+        $novelImages = $this->novelImageRepository->findBy(['image' => $image->getId()]);
+        foreach ($novelImages as $novelImage) {
+            $this->em->remove($novelImage);
+        }
+        $this->em->remove($image);
+        $this->em->flush();
+
+        unlink($destination.'/'.$filename);
+
+        return true;
     }
 }

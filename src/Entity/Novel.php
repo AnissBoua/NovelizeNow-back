@@ -6,9 +6,12 @@ use App\Entity\User;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\NovelRepository;
+use DateTime;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints\Date;
 
 #[ORM\Entity(repositoryClass: NovelRepository::class)]
 class Novel
@@ -16,32 +19,34 @@ class Novel
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["novel:get", "novel:edit", "chapter:read","page:read"])]
+    #[Groups(["novel:get", "novel:edit", "chapter:read","page:read", "user-novel:get"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit", "chapter:read"])]
+    #[Groups(["novel:get", "novel:edit", "chapter:read", "user-novel:get"])]
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?string $resume = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?\DateTimeInterface $date_creation = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $date_update = null;
 
     #[ORM\ManyToMany(targetEntity: Category::class, mappedBy: 'novel')]
+    #[Groups(["novel:get", "novel:edit"])]
     private Collection $categories;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: NovelImage::class)]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private Collection $novelImages;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Chapter::class)]
@@ -76,6 +81,24 @@ class Novel
         return $this->id;
     }
 
+    #[Groups(["novel:get", "user-novel:get"])]
+    public function getAuthor()
+    {
+        $relatedUser = $this->userNovels;
+        foreach($relatedUser as $userNovel){
+            if($userNovel->getRelation() === "author"){
+                $user = $userNovel->getUser();
+            }
+        }
+        return $user;
+    }
+
+    #[Groups(["novel:get", "user-novel:get"])]
+    public function getQuantiteChapitre()
+    {
+        return count($this->getChapters());
+    }
+
     public function getTitle(): ?string
     {
         return $this->title;
@@ -88,9 +111,9 @@ class Novel
         return $this;
     }
 
-    public function getDateCreation(): ?\DateTimeInterface
+    public function getDateCreation(): ?string
     {
-        return $this->date_creation;
+        return $this->date_creation->format('Y-m-d H:i:s');
     }
 
     public function setDateCreation(\DateTimeInterface $date_creation): self
@@ -205,18 +228,6 @@ class Novel
     public function getUserNovels(): Collection
     {
         return $this->userNovels;
-    }
-
-    #[Groups(["novel:get"])]
-    public function getAuthor()
-    {
-        $relatedUser = $this->userNovels;
-        foreach($relatedUser as $userNovel){
-            if($userNovel->getRelation() === "author"){
-                $user = $userNovel->getUser();
-            }
-        }
-        return $user;
     }
 
     public function addUserNovel(UserNovel $userNovel): self

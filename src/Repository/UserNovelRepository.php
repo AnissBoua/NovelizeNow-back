@@ -39,6 +39,18 @@ class UserNovelRepository extends ServiceEntityRepository
         }
     }
 
+    public function getNovelsByUser($user_id) {
+        $userNovels = $this->createQueryBuilder('user_novel')
+                        ->join('user_novel.novel', 'novel')
+                        ->where('user_novel.user = :user_id')
+                        ->setParameter('user_id', $user_id)
+                        ->orderBy('novel.id', 'DESC')
+                        ->select('user_novel', 'novel')
+                        ->getQuery()
+                        ->getResult();
+        return $userNovels;
+    }
+
 //    /**
 //     * @return UserNovel[] Returns an array of UserNovel objects
 //     */
