@@ -235,7 +235,7 @@ class NovelController extends AbstractController
     // function for upload images, images can be of different types (cover, banner, etc.)
     private function setNovelImages($novel, $image, $position) : NovelImage
     {
-        $destination = $this->getParameter('kernel.project_dir').'/public/uploads/novels';
+        $destination = '/uploads/novels';
         $image = $this->fileUploadMiddleware->imageUpload($image, $destination);
         if (!$image) {
             return $this->json(["error" => "L'image que vous avez essayer de uploder n'a pas etais sauvegarder"], 400);

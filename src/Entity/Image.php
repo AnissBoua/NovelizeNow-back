@@ -20,6 +20,10 @@ class Image
     #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?string $filename = null;
 
+    #[ORM\Column(length: 255)]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
+    private ?string $filepath = null;
+
     #[ORM\OneToMany(mappedBy: 'image', targetEntity: NovelImage::class)]
     private Collection $novelImages;
 
@@ -71,6 +75,18 @@ class Image
                 $novelImage->setImage(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getFilepath(): ?string
+    {
+        return $this->filepath;
+    }
+
+    public function setFilepath(string $filepath): self
+    {
+        $this->filepath = $filepath;
 
         return $this;
     }

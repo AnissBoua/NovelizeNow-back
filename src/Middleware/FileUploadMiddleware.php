@@ -10,9 +10,10 @@ use Symfony\Component\String\Slugger\AsciiSlugger;
 
 class FileUploadMiddleware {
 
-    public function __construct(EntityManagerInterface $em, private NovelImageRepository $novelImageRepository)
+    public function __construct(EntityManagerInterface $em, private NovelImageRepository $novelImageRepository, private string $kernelProjectDir )
     {
         $this->em = $em;
+        $this->kernelProjectDir = $kernelProjectDir;
     }
     
     public function imageUpload($file = null, $destination = null) : Image | bool
@@ -33,7 +34,10 @@ class FileUploadMiddleware {
 
         $image = new Image;
         $image->setFilename($filename);
-        $file->move($destination, $filename);
+        $image->setFilepath($destination . '/' . $filename);
+
+        $projectDir = $this->kernelProjectDir;
+        $file->move($projectDir . '/public' . $destination, $filename);
 
         $this->em->persist($image);
         $this->em->flush();
