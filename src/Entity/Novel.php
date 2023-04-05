@@ -34,6 +34,9 @@ class Novel
     #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?string $resume = null;
 
+    #[ORM\Column(type: 'string', columnDefinition: "ENUM('published', 'unpublished')")]
+    private ?string $status = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?\DateTimeInterface $date_creation = null;
@@ -272,6 +275,18 @@ class Novel
     public function setResume(string $resume): self
     {
         $this->resume = $resume;
+
+        return $this;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
 
         return $this;
     }

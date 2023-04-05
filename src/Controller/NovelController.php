@@ -70,6 +70,7 @@ class NovelController extends AbstractController
         $novel->setSlug($this->findSlug($slug));
 
         $novel->setResume($data->get('resume'));
+        $novel->setStatus('unpublished');
         $novel->setDateCreation(new DateTime());
         $this->em->persist($novel); 
 
@@ -169,6 +170,10 @@ class NovelController extends AbstractController
         $categories = $data->all('category');
         $this->setNoveltCategories($novel, $categories);
 
+        if ($data->get('status')) {
+            $novel->setStatus($data->get('status')); 
+        }
+        
         $novel->setDateUpdate(new DateTime());
         $this->em->persist($novel);
         $this->em->flush();
