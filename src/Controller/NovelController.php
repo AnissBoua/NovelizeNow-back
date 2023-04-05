@@ -61,6 +61,7 @@ class NovelController extends AbstractController
         $user = $this->userRepository->find($user->getId());
 
 
+        // Nolel
         $slugger = new AsciiSlugger();
         $novel = new Novel;
         $novel->setTitle($data->get('title'));
@@ -70,7 +71,9 @@ class NovelController extends AbstractController
 
         $novel->setResume($data->get('resume'));
         $novel->setDateCreation(new DateTime());
+        $this->em->persist($novel); 
 
+        // Relations
         $categories = $data->all('category');
         $this->setNoveltCategories($novel, $categories);
 
@@ -94,7 +97,6 @@ class NovelController extends AbstractController
   
         $novel->addUserNovel($userNovel);
 
-        $this->em->persist($novel); 
         $this->em->persist($userNovel);
         $this->em->flush();
         $novel = $serializerInterface->serialize($novel, 'json', ['groups' => 'novel:get']);
