@@ -53,13 +53,13 @@ class NovelController extends AbstractController
         $data = $request->request;
         $files = $request->files;
 
-        $cover = $files->get('cover');
-        $destination = $this->getParameter('kernel.project_dir').'/public/uploads/novels';
-        $cover = $this->fileUploadMiddleware->imageUpload($cover, $destination);
-
-        if (!$cover) {
-            return $this->json(["error" => "L'image que vous avez essayer de uploder n'a pas etais sauvegarder"], 400);
+        /** @var \App\Entity\User $user */
+        $user = $this->security->getUser();
+        if(!$user) {
+            return $this->json(['error' => 'Vous devez être connecté pour créer un nouveau roman'], 401);
         }
+        $user = $this->userRepository->find($user->getId());
+
 
         $slugger = new AsciiSlugger();
         $novel = new Novel;
@@ -72,32 +72,30 @@ class NovelController extends AbstractController
         $novel->setDateCreation(new DateTime());
 
         $categories = $data->all('category');
-        foreach ($categories as $category) {
-            $category = $this->categoryRepository->findOneBy(['id' => $category]);
-            $novel->addCategory($category);
+        $this->setNoveltCategories($novel, $categories);
+
+        if ($files->get('cover')) {
+            $cover = $files->get('cover');
+            $cover = $this->setNovelImages($novel, $cover, 'cover');
+            $novel->addNovelImage($cover);
         }
 
-        /** @var \App\Entity\User $user */
-        $user = $this->security->getUser();
-        $user = $this->userRepository->find($user->getId());
+        if($files->get('banner')) {
+            $banner = $files->get('banner');
+            $banner = $this->setNovelImages($novel, $banner, 'banner');
+            $novel->addNovelImage($banner);
+        }
+        
 
         $userNovel = new UserNovel;
         $userNovel->setNovel($novel);
         $userNovel->setUser($user); 
         $userNovel->setRelation('author');
   
-        
-        $novelImage = new NovelImage;
-        $novelImage->setImage($cover);
-        $novelImage->setNovel($novel);
-        $novelImage->setImgPosition('cover');
-
-        $novel->addNovelImage($novelImage);
         $novel->addUserNovel($userNovel);
 
         $this->em->persist($novel); 
         $this->em->persist($userNovel);
-        $this->em->persist($novelImage);
         $this->em->flush();
         $novel = $serializerInterface->serialize($novel, 'json', ['groups' => 'novel:get']);
         return new JsonResponse($novel, 200,  [], true);
@@ -155,32 +153,19 @@ class NovelController extends AbstractController
         $novel->setResume($data->get('resume'));
         // handle update cover image
         if ($files->get('cover')) {
-            $destination = $this->getParameter('kernel.project_dir').'/public/uploads/novels';
-            
             $cover = $files->get('cover');
-            $cover = $this->fileUploadMiddleware->imageUpload($cover, $destination);
-            if (!$cover) {
-                return $this->json(["error" => "L'image que vous avez essayer de uploder n'a pas etais sauvegarder"], 400);
-            }
+            $cover = $this->setNovelImages($novel, $cover, 'cover');
+            $novel->addNovelImage($cover);
+        }
 
-            $novelImage = $novel->getNovelImages()->filter(function ($novelImage) {
-                return $novelImage->getImgPosition() === 'cover';
-            })->first();
-
-            $oldCover = $novelImage->getImage();
-            $this->fileUploadMiddleware->imageDelete($oldCover, $destination);
-            
-            $novelImage->setImage($cover);
-            $this->em->persist($novelImage);
+        if ($files->get('banner')) {
+            $banner = $files->get('banner');
+            $banner = $this->setNovelImages($novel, $banner, 'banner');
+            $novel->addNovelImage($banner);
         }
 
         $categories = $data->all('category');
-        foreach ($categories as $category) {
-            $category = $this->categoryRepository->findOneBy(['id' => $category]);
-            if (!$novel->getCategories()->contains($category)) {
-                $novel->addCategory($category);
-            }
-        }
+        $this->setNoveltCategories($novel, $categories);
 
         $novel->setDateUpdate(new DateTime());
         $this->em->persist($novel);
@@ -209,7 +194,6 @@ class NovelController extends AbstractController
         return $this->json(['response' => 'Deleted succesfully'], 200);
     }
 
-
     private function findSlug($slug, $int = 1){
 
         if ($this->novelRepository->findOneBy(['slug' => $slug])) {
@@ -223,5 +207,50 @@ class NovelController extends AbstractController
         return $slug;
     }
 
-    // TODO : logic for uploading any type of image (cover, banner, etc...), handle post request and edit request
+    private function setNoveltCategories($novel, $categories): void
+    {
+        foreach ($categories as $category) {
+            
+            $category = $this->categoryRepository->findOneBy(['id' => $category]);
+            // remove old categories
+            foreach ($novel->getCategories() as $oldCategory) {
+                if (!in_array($oldCategory->getId(), $categories)) {
+                    $novel->removeCategory($oldCategory);
+                }
+            }
+            // add new categories
+            if (!$novel->getCategories()->contains($category)) {
+                $novel->addCategory($category);
+            }
+        }
+    }
+
+    // function for upload images, images can be of different types (cover, banner, etc.)
+    private function setNovelImages($novel, $image, $position) : NovelImage
+    {
+        $destination = $this->getParameter('kernel.project_dir').'/public/uploads/novels';
+        $image = $this->fileUploadMiddleware->imageUpload($image, $destination);
+        if (!$image) {
+            return $this->json(["error" => "L'image que vous avez essayer de uploder n'a pas etais sauvegarder"], 400);
+        }
+
+        $novelImage = $novel->getNovelImages()->filter(function ($novelImage) use ($position) {
+            return $novelImage->getImgPosition() === $position;
+        })->first();
+
+        if($novelImage){
+            $oldImage = $novelImage->getImage();
+            $this->fileUploadMiddleware->imageDelete($oldImage, $destination);
+            $novelImage->setImage($image);
+            $this->em->persist($novelImage);
+            return $novelImage;
+        } else {
+            $novelImage = new NovelImage;
+            $novelImage->setImage($image);
+            $novelImage->setImgPosition($position);
+            $novelImage->setNovel($novel);
+            $this->em->persist($novelImage);
+            return $novelImage;
+        }
+    }
 }
