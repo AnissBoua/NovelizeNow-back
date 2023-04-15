@@ -34,6 +34,9 @@ class Novel
     #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?string $resume = null;
 
+    #[ORM\Column(type: 'string', columnDefinition: "ENUM('published', 'unpublished')")]
+    private ?string $status = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?\DateTimeInterface $date_creation = null;
@@ -69,7 +72,7 @@ class Novel
     {
         $chapters = array();
         foreach ($this->chapters as $chapter) {
-            if ($chapter->getStatus() === 'Published') {
+            if ($chapter->getStatus() === 'published') {
                 array_push($chapters, $chapter);
             }
         }
@@ -97,6 +100,25 @@ class Novel
     public function getQuantiteChapitre()
     {
         return count($this->getChapters());
+    }
+
+    #[Groups(["novel:get", "user-novel:get"])]
+    public function getCover()
+    {
+        return $this->getImageByPosition('cover');
+    }
+
+    #[Groups(["novel:get", "user-novel:get"])]
+    public function getBanner()
+    {
+        return $this->getImageByPosition('banner');
+    }
+
+    public function getImageByPosition($position){
+        $image = $this->novelImages->filter(function ($novelImage) use ($position) {
+            return $novelImage->getImgPosition() === $position;
+        });
+        return $image->first() ? $image->first()->getImage() : null;
     }
 
     public function getTitle(): ?string
@@ -272,6 +294,18 @@ class Novel
     public function setResume(string $resume): self
     {
         $this->resume = $resume;
+
+        return $this;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
 
         return $this;
     }
