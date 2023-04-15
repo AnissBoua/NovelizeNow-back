@@ -22,7 +22,7 @@ class Chapter
     #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit"])]
     private ?string $title = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type:'string', columnDefinition: "ENUM('published', 'in_progress')")]
     #[Groups(["chapter:read", "novel:get"])]
     private ?string $status = null;
 

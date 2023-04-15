@@ -53,7 +53,7 @@ class Novel
     private Collection $novelImages;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Chapter::class)]
-    #[Groups(["novel:edit"])]
+    #[Groups(["novel:get", "novel:edit"])]
     private Collection $chapters;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: UserNovel::class, cascade: ['remove'])]
@@ -72,7 +72,7 @@ class Novel
     {
         $chapters = array();
         foreach ($this->chapters as $chapter) {
-            if ($chapter->getStatus() === 'Published') {
+            if ($chapter->getStatus() === 'published') {
                 array_push($chapters, $chapter);
             }
         }
@@ -100,6 +100,25 @@ class Novel
     public function getQuantiteChapitre()
     {
         return count($this->getChapters());
+    }
+
+    #[Groups(["novel:get", "user-novel:get"])]
+    public function getCover()
+    {
+        return $this->getImageByPosition('cover');
+    }
+
+    #[Groups(["novel:get", "user-novel:get"])]
+    public function getBanner()
+    {
+        return $this->getImageByPosition('banner');
+    }
+
+    public function getImageByPosition($position){
+        $image = $this->novelImages->filter(function ($novelImage) use ($position) {
+            return $novelImage->getImgPosition() === $position;
+        });
+        return $image->first() ? $image->first()->getImage() : null;
     }
 
     public function getTitle(): ?string

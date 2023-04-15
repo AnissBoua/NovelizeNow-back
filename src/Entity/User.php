@@ -17,6 +17,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["novel:get", "user-novel:get"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
