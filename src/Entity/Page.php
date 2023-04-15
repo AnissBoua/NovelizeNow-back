@@ -68,4 +68,13 @@ class Page
 
         return $this;
     }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'content' => $this->content,
+            'html' => $this->html
+        ];
+    }
 }

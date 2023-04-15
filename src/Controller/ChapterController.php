@@ -3,17 +3,18 @@
 namespace App\Controller;
 
 use App\Entity\Chapter;
-use App\Middleware\NovelRelationMiddleware;
+use App\Repository\PageRepository;
 use App\Repository\NovelRepository;
 use App\Repository\ChapterRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
-use Symfony\Bundle\SecurityBundle\Security as SecurityAuth;
+use App\Middleware\NovelRelationMiddleware;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Bundle\SecurityBundle\Security as SecurityAuth;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 class ChapterController extends AbstractController
@@ -21,11 +22,13 @@ class ChapterController extends AbstractController
     private $em;
     private $chapterRepo;
     private $novelRepo;
+    private $pageRepo;
 
-    public function __construct(EntityManagerInterface $em, ChapterRepository $chapterRepo , NovelRepository $novelRepo, NovelRelationMiddleware $novelRelationMiddleware , private SecurityAuth $security){
+    public function __construct(EntityManagerInterface $em, ChapterRepository $chapterRepo , NovelRepository $novelRepo, PageRepository $pageRepo, NovelRelationMiddleware $novelRelationMiddleware, private SecurityAuth $security){
         $this->em = $em;
         $this->chapterRepo = $chapterRepo;
         $this->novelRepo = $novelRepo;
+        $this->pageRepo = $pageRepo;
         $this->novelRelationMiddleware = $novelRelationMiddleware;
     }
 
@@ -95,7 +98,7 @@ class ChapterController extends AbstractController
     // }
 
     #[Route('/chapter/{id}', methods: ['DELETE']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
-    public function deleteChapter(int $id, ){
+    public function deleteChapter(int $id ){
         $chapter = $this->chapterRepo->find($id);
         if (!$chapter) {
             return $this->json(['error' => 'No found id: '. $id], 404);
@@ -111,6 +114,23 @@ class ChapterController extends AbstractController
         $this->em->remove($chapter);
         $this->em->flush();
         return new Response("no content", 204);
+    }
+
+    #[Route('/chapter_pages/{id}', methods: ['GET']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function getChapterPages(int $id ){
+        $chapter = $this->chapterRepo->find($id);
+        if (!$chapter) {
+            return $this->json(['error' => 'No found id: '. $id], 404);
+        }
+        $pageState = $chapter->getPageState();
+        $pages = [];
+        foreach ($pageState as $pageId) {
+            $page= $this->pageRepo->find($pageId);
+            array_push($pages,$page->toArray());
+        }
+        $arrayResponse = ["novelTitle"=>$chapter->getNovel()->getTitle(),"pageState"=>$pageState, "pages"=>$pages];
+        
+        return new JsonResponse(json_encode($arrayResponse),200, [], true);
     }
     
 }
