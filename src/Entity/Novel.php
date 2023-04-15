@@ -53,7 +53,7 @@ class Novel
     private Collection $novelImages;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Chapter::class)]
-    #[Groups(["novel:edit"])]
+    #[Groups(["novel:get", "novel:edit"])]
     private Collection $chapters;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: UserNovel::class, cascade: ['remove'])]
