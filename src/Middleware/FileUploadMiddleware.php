@@ -60,8 +60,8 @@ class FileUploadMiddleware {
         }
         $this->em->remove($image);
         $this->em->flush();
-
-        unlink($destination.'/'.$filename);
+        $projectDir = $this->kernelProjectDir;
+        unlink($projectDir . '/public'.$destination.'/'.$filename);
 
         return true;
     }
