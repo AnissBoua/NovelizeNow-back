@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use DateTime;
+use Exception;
 use App\Entity\Image;
 use App\Entity\Novel;
 use App\Entity\UserNovel;
@@ -238,7 +239,7 @@ class NovelController extends AbstractController
         $destination = '/uploads/novels';
         $image = $this->fileUploadMiddleware->imageUpload($image, $destination);
         if (!$image) {
-            return $this->json(["error" => "L'image que vous avez essayer de uploder n'a pas etais sauvegarder"], 400);
+            throw new Exception("L'image que vous avez essayer de uploder n'a pas etais sauvegarder, verifier que le fichier est bien une image de type jpg, jpeg ou png");
         }
 
         $novelImage = $novel->getNovelImages()->filter(function ($novelImage) use ($position) {
