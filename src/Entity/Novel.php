@@ -48,7 +48,8 @@ class Novel
     #[Groups(["novel:get", "novel:edit"])]
     private Collection $categories;
 
-    #[ORM\OneToMany(mappedBy: 'novel', targetEntity: NovelImage::class)]
+    // delete if novel is deleted
+    #[ORM\OneToMany(mappedBy: 'novel', targetEntity: NovelImage::class, cascade: ['remove'])]
     #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private Collection $novelImages;
 
