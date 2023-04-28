@@ -17,3 +17,14 @@ composer install
 ```sh
 php bin/console lexik:jwt:generate-keypair
 ```
+
+
+### Ecouter les Webhook Stripe 
+
+Installer le Stripe CLI: https://stripe.com/docs/stripe-cli
+
+```sh
+stripe listen --forward-to http://127.0.0.1:8000/api/stripe/checkout-completed-webhook
+```
+
+Enfin mettre le Stripe Webhook Key dans le .env
