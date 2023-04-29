@@ -17,7 +17,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["novel:get", "user-novel:get"])]
+    #[Groups(["novel:get", "user-novel:get", "like:get"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
@@ -55,12 +55,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Order::class)]
     private Collection $orders;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Like::class, orphanRemoval: true)]
+    private Collection $likes;
+
     public function __construct()
     {
         // $this->roles[] = 'ROLE_USER';
         $this->transactions = new ArrayCollection();
         $this->userNovels = new ArrayCollection();
         $this->orders = new ArrayCollection();
+        $this->likes = new ArrayCollection();
     }
 
     public static function createFromPayload($id, array $payload)
@@ -280,6 +284,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
             // set the owning side to null (unless already changed)
             if ($order->getUser() === $this) {
                 $order->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Like>
+     */
+    public function getLikes(): Collection
+    {
+        return $this->likes;
+    }
+
+    public function addLike(Like $like): self
+    {
+        if (!$this->likes->contains($like)) {
+            $this->likes->add($like);
+            $like->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLike(Like $like): self
+    {
+        if ($this->likes->removeElement($like)) {
+            // set the owning side to null (unless already changed)
+            if ($like->getUser() === $this) {
+                $like->setUser(null);
             }
         }
 
