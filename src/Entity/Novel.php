@@ -27,7 +27,7 @@ class Novel
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get", "chapter:read"])]
     private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
