@@ -60,12 +60,16 @@ class Novel
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: UserNovel::class, cascade: ['remove'])]
     private Collection $userNovels;
 
+    #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Order::class)]
+    private Collection $orders;
+
     public function __construct()
     {
         $this->categories = new ArrayCollection();
         $this->novelImages = new ArrayCollection();
         $this->chapters = new ArrayCollection();
         $this->userNovels = new ArrayCollection();
+        $this->orders = new ArrayCollection();
     }
 
     #[Groups(["novel:get"])]
@@ -307,6 +311,36 @@ class Novel
     public function setStatus(string $status): self
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Order>
+     */
+    public function getOrders(): Collection
+    {
+        return $this->orders;
+    }
+
+    public function addOrder(Order $order): self
+    {
+        if (!$this->orders->contains($order)) {
+            $this->orders->add($order);
+            $order->setNovel($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOrder(Order $order): self
+    {
+        if ($this->orders->removeElement($order)) {
+            // set the owning side to null (unless already changed)
+            if ($order->getNovel() === $this) {
+                $order->setNovel(null);
+            }
+        }
 
         return $this;
     }
