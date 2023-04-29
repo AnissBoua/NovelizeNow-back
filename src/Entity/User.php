@@ -46,24 +46,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $username = null;
 
-    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
-    private ?Cart $cart = null;
-
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Transaction::class)]
     private Collection $transactions;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: CoinTransaction::class)]
-    private Collection $coinTransactions;
-
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserNovel::class)]
     private Collection $userNovels;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Order::class)]
+    private Collection $orders;
 
     public function __construct()
     {
         // $this->roles[] = 'ROLE_USER';
         $this->transactions = new ArrayCollection();
-        $this->coinTransactions = new ArrayCollection();
         $this->userNovels = new ArrayCollection();
+        $this->orders = new ArrayCollection();
     }
 
     public static function createFromPayload($id, array $payload)
@@ -199,23 +196,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
         return $this;
     }
 
-    public function getCart(): ?Cart
-    {
-        return $this->cart;
-    }
-
-    public function setCart(Cart $cart): self
-    {
-        // set the owning side of the relation if necessary
-        if ($cart->getUser() !== $this) {
-            $cart->setUser($this);
-        }
-
-        $this->cart = $cart;
-
-        return $this;
-    }
-
     /**
      * @return Collection<int, Transaction>
      */
@@ -247,36 +227,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     }
 
     /**
-     * @return Collection<int, CoinTransaction>
-     */
-    public function getCoinTransactions(): Collection
-    {
-        return $this->coinTransactions;
-    }
-
-    public function addCoinTransaction(CoinTransaction $coinTransaction): self
-    {
-        if (!$this->coinTransactions->contains($coinTransaction)) {
-            $this->coinTransactions->add($coinTransaction);
-            $coinTransaction->setUser($this);
-        }
-
-        return $this;
-    }
-
-    public function removeCoinTransaction(CoinTransaction $coinTransaction): self
-    {
-        if ($this->coinTransactions->removeElement($coinTransaction)) {
-            // set the owning side to null (unless already changed)
-            if ($coinTransaction->getUser() === $this) {
-                $coinTransaction->setUser(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
      * @return Collection<int, UserNovel>
      */
     public function getUserNovels(): Collection
@@ -300,6 +250,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
             // set the owning side to null (unless already changed)
             if ($userNovel->getUser() === $this) {
                 $userNovel->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Order>
+     */
+    public function getOrders(): Collection
+    {
+        return $this->orders;
+    }
+
+    public function addOrder(Order $order): self
+    {
+        if (!$this->orders->contains($order)) {
+            $this->orders->add($order);
+            $order->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOrder(Order $order): self
+    {
+        if ($this->orders->removeElement($order)) {
+            // set the owning side to null (unless already changed)
+            if ($order->getUser() === $this) {
+                $order->setUser(null);
             }
         }
 
