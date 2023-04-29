@@ -26,6 +26,19 @@ class Transaction
     #[ORM\ManyToOne(inversedBy: 'transactions')]
     private ?User $user = null;
 
+    #[ORM\ManyToOne(inversedBy: 'transactions')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Offer $offer = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $payment_id = null;
+
+    #[ORM\Column(type: 'string', columnDefinition: 'ENUM("pending", "completed", "canceled")')]
+    private ?string $status = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $payment_intent = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -75,6 +88,54 @@ class Transaction
     public function setUser(?User $user): self
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    public function getOffer(): ?Offer
+    {
+        return $this->offer;
+    }
+
+    public function setOffer(?Offer $offer): self
+    {
+        $this->offer = $offer;
+
+        return $this;
+    }
+
+    public function getPaymentId(): ?string
+    {
+        return $this->payment_id;
+    }
+
+    public function setPaymentId(string $payment_id): self
+    {
+        $this->payment_id = $payment_id;
+
+        return $this;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function getPaymentIntent(): ?string
+    {
+        return $this->payment_intent;
+    }
+
+    public function setPaymentIntent(string $payment_intent): self
+    {
+        $this->payment_intent = $payment_intent;
 
         return $this;
     }
