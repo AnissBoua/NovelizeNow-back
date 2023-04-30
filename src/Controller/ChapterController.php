@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use Exception;
+use App\Entity\Order;
 use App\Entity\Chapter;
 use App\Repository\PageRepository;
 use App\Repository\NovelRepository;
@@ -122,13 +124,43 @@ class ChapterController extends AbstractController
         if (!$chapter) {
             return $this->json(['error' => 'No found id: '. $id], 404);
         }
+
+        $novel = $chapter->getNovel();
+        $allChapters = $novel->getChapters();
+        $firstChapter = false;
+        // is first chapter ?
+        if($allChapters[0]->getId() == $chapter->getId()){
+            $firstChapter = true;
+        }
+
+        if ($firstChapter === false) {
+            $user = $this->security->getUser();
+            $order = $this->em->getRepository(Order::class)
+                        ->findOneBy([
+                            "user" => $user, 
+                            "novel" => $novel
+                        ]);
+            if (!$order) {
+                throw new Exception("You haven't buy this novel, so you can't read it", 1);
+
+            }
+        }
+        
         $pageState = $chapter->getPageState();
         $pages = [];
         foreach ($pageState as $pageId) {
             $page= $this->pageRepo->find($pageId);
             array_push($pages,$page->toArray());
         }
-        $arrayResponse = ["novelTitle"=>$chapter->getNovel()->getTitle(),"pageState"=>$pageState, "pages"=>$pages];
+
+        
+
+        $arrayResponse = [
+            "novelTitle" => $chapter->getNovel()->getTitle(),
+            "pageState" => $pageState, 
+            "pages" => $pages,
+            "firstChapter" => $firstChapter
+        ];
         
         return new JsonResponse(json_encode($arrayResponse),200, [], true);
     }

@@ -8,6 +8,7 @@ use App\Entity\Image;
 use App\Entity\Novel;
 use App\Entity\UserNovel;
 use App\Entity\NovelImage;
+use App\Entity\Order;
 use App\Repository\UserRepository;
 use App\Repository\NovelRepository;
 use App\Repository\CategoryRepository;
@@ -123,7 +124,30 @@ class NovelController extends AbstractController
         if (!$novel) {
             return $this->json(['error' => 'No found id: '. $slug], 404);
         }
+
+        
+
         $novel = $serializerInterface->serialize($novel, 'json', ['groups' => 'novel:get']);
+        $novel = json_decode($novel);
+        $novel->isAuthor = false;
+        $novel->userBought = false;
+        /** @var \App\Entity\User $user */
+        $user = $this->security->getUser();
+        if($user) {
+            $user = $this->userRepository->find($user->getId());
+            if ($user->getId() == $novel->author->id) {
+                $novel->isAuthor = true;
+            }
+
+            $order = $this->em->getRepository(Order::class)->findOneBy([
+                'user' => $user->getId(), 
+                'novel' => $novel->id
+            ]);
+            if ($order) {
+                $novel->userBought = true;
+            }
+        }
+        $novel = json_encode($novel);
         return new JsonResponse($novel, 200,  [], true);
     }
 
