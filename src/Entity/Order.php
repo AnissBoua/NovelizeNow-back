@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\OrderRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: '`order`')]
@@ -13,9 +14,11 @@ class Order
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["order:post"])]
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Groups(["order:post"])]
     private ?int $coins = null;
 
     #[ORM\ManyToOne(inversedBy: 'orders')]
@@ -27,6 +30,7 @@ class Order
     private ?Novel $novel = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(["order:post"])]
     private ?\DateTimeInterface $date_order = null;
 
     public function getId(): ?int

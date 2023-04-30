@@ -35,6 +35,7 @@ class Novel
     private ?string $resume = null;
 
     #[ORM\Column(type: 'string', columnDefinition: "ENUM('published', 'unpublished')")]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?string $status = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -62,6 +63,9 @@ class Novel
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Order::class)]
     private Collection $orders;
+
+    #[ORM\Column]
+    private ?int $price = null;
 
     public function __construct()
     {
@@ -341,6 +345,18 @@ class Novel
                 $order->setNovel(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getPrice(): ?int
+    {
+        return $this->price;
+    }
+
+    public function setPrice(int $price): self
+    {
+        $this->price = $price;
 
         return $this;
     }
