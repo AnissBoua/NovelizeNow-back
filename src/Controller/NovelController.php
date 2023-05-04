@@ -6,9 +6,10 @@ use DateTime;
 use Exception;
 use App\Entity\Image;
 use App\Entity\Novel;
+use App\Entity\Order;
+use App\Entity\Comment;
 use App\Entity\UserNovel;
 use App\Entity\NovelImage;
-use App\Entity\Order;
 use App\Repository\UserRepository;
 use App\Repository\NovelRepository;
 use App\Repository\CategoryRepository;
@@ -147,6 +148,24 @@ class NovelController extends AbstractController
                 $novel->userBought = true;
             }
         }
+
+        $novel->comments = $this->em->getRepository(Comment::class)->findBy([
+            'novel' => $novel->id,
+            'comment' => null
+        ], ['id' => 'DESC']);
+
+        foreach ($novel->comments as $key => $comment) {
+            $comment = json_decode($serializerInterface->serialize($comment, 'json', ['groups' => 'novel:get']));
+
+            $comment->comments = $this->em->getRepository(Comment::class)->findBy([
+                    'comment' => $comment->id
+                ], ['id' => 'DESC']);
+
+            $comment->comments = json_decode($serializerInterface->serialize($comment->comments, 'json', ['groups' => 'novel:get']));
+
+            $novel->comments[$key] = $comment;
+        }
+
         $novel = json_encode($novel);
         return new JsonResponse($novel, 200,  [], true);
     }
