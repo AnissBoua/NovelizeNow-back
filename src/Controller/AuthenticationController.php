@@ -4,14 +4,15 @@ namespace App\Controller;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security as SecurityMiddleware;
 
 class AuthenticationController extends AbstractController
 {
@@ -79,4 +80,22 @@ class AuthenticationController extends AbstractController
     }
 
     // Hidden Route /token/refresh To refresh token required refresh_token in body
+
+    #[Route("/user/coins", name:"api_user_coins", methods: ["GET"]), SecurityMiddleware("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function getCoins(): Response
+    {
+        /** @var User */
+        $user = $this->security->getUser();
+
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+        if(!$user) {
+            return $this->json(['error' => 'Vous devez être connecté pour créer un nouveau roman'], 401);
+        }
+
+        return new JsonResponse([
+            "coins" => $user->getCoins()
+        ],
+        JsonResponse::HTTP_OK
+        );
+    }
 }
