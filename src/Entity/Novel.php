@@ -10,6 +10,7 @@ use DateTime;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping\OrderBy;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints\Date;
 
@@ -67,6 +68,10 @@ class Novel
     #[ORM\Column]
     private ?int $price = null;
 
+    #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Comment::class), OrderBy(['id' => 'DESC'])]
+    // #[Groups(["novel:get", "novel:edit"])]
+    private Collection $comments;
+
     public function __construct()
     {
         $this->categories = new ArrayCollection();
@@ -74,6 +79,7 @@ class Novel
         $this->chapters = new ArrayCollection();
         $this->userNovels = new ArrayCollection();
         $this->orders = new ArrayCollection();
+        $this->comments = new ArrayCollection();
     }
 
     #[Groups(["novel:get"])]
@@ -357,6 +363,36 @@ class Novel
     public function setPrice(int $price): self
     {
         $this->price = $price;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function getComments(): Collection
+    {
+        return $this->comments;
+    }
+
+    public function addComment(Comment $comment): self
+    {
+        if (!$this->comments->contains($comment)) {
+            $this->comments->add($comment);
+            $comment->setNovel($this);
+        }
+
+        return $this;
+    }
+
+    public function removeComment(Comment $comment): self
+    {
+        if ($this->comments->removeElement($comment)) {
+            // set the owning side to null (unless already changed)
+            if ($comment->getNovel() === $this) {
+                $comment->setNovel(null);
+            }
+        }
 
         return $this;
     }

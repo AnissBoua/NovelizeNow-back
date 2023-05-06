@@ -17,7 +17,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["novel:get", "user-novel:get", "like:get"])]
+    #[Groups(["novel:get", "user-novel:get", "like:get", 'comment:post'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
@@ -33,17 +33,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "user-novel:get"])]
+    #[Groups(["novel:get", "user-novel:get", 'comment:post'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "user-novel:get"])]
+    #[Groups(["novel:get", "user-novel:get", 'comment:post'])]
     private ?string $lastname = null;
 
     #[ORM\Column]
     private ?int $coins = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(["novel:get", "user-novel:get", 'comment:post'])]
     private ?string $username = null;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Transaction::class)]
@@ -58,6 +59,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Like::class, orphanRemoval: true)]
     private Collection $likes;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Comment::class)]
+    private Collection $comments;
+
     public function __construct()
     {
         // $this->roles[] = 'ROLE_USER';
@@ -65,6 +69,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
         $this->userNovels = new ArrayCollection();
         $this->orders = new ArrayCollection();
         $this->likes = new ArrayCollection();
+        $this->comments = new ArrayCollection();
     }
 
     public static function createFromPayload($id, array $payload)
@@ -314,6 +319,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
             // set the owning side to null (unless already changed)
             if ($like->getUser() === $this) {
                 $like->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function getComments(): Collection
+    {
+        return $this->comments;
+    }
+
+    public function addComment(Comment $comment): self
+    {
+        if (!$this->comments->contains($comment)) {
+            $this->comments->add($comment);
+            $comment->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeComment(Comment $comment): self
+    {
+        if ($this->comments->removeElement($comment)) {
+            // set the owning side to null (unless already changed)
+            if ($comment->getUser() === $this) {
+                $comment->setUser(null);
             }
         }
 
