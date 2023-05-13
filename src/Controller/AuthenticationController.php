@@ -13,34 +13,46 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security as SecurityMiddleware;
+use App\Middleware\FileUploadMiddleware;
 
 class AuthenticationController extends AbstractController
 {
     public function __construct(
         EntityManagerInterface $em, 
         SerializerInterface $serializer,
-        private Security $security
+        private Security $security,
+        FileUploadMiddleware $fileUploadMiddleware
     )
     {
         $this->serializer = $serializer;
+        $this->fileUploadMiddleware = $fileUploadMiddleware;
         $this->em = $em;
     }
 
     #[Route('/registration', name: 'api_registration', methods:["POST"])]
     public function registration(Request $request, UserPasswordHasherInterface $passwordHasher): Response
     {
-        $data = json_decode($request->getContent());
+        
+        $data = $request->request;
+        $files = $request->files;
 
         $user = new User();
+        
+        $user->setName($data->get('name'));
+        $user->setLastname($data->get('lastname'));
+        $username = $data->get('username');
+        if($username !== null) $user->setUsername($username);
 
-        $user->setName($data->name);
-        $user->setLastname($data->lastname);
-        if(isset($data->username)) $user->setUsername($data->username);
-
-        $user->setEmail($data->email);
+        $user->setEmail($data->get('email'));
         $user->setCoins(0);
-        $user->setPassword($passwordHasher->hashPassword($user, $data->password));
+        $user->setPassword($passwordHasher->hashPassword($user, $data->get('password')));
 
+        if ($files->get('avatar')) {
+            $avatar = $files->get('avatar');
+            $destination = '/uploads/avatars';
+            $image = $this->fileUploadMiddleware->imageUpload($avatar,$destination);
+            $user->setAvatar($image);
+        }
         $this->em->persist($user);
         $this->em->flush($user);
 

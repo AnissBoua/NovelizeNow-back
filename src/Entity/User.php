@@ -62,6 +62,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Comment::class)]
     private Collection $comments;
 
+    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    private ?Image $avatar = null;
+
     public function __construct()
     {
         // $this->roles[] = 'ROLE_USER';
@@ -351,6 +354,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
                 $comment->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getAvatar(): ?Image
+    {
+        return $this->avatar;
+    }
+
+    public function setAvatar(?Image $avatar): self
+    {
+        $this->avatar = $avatar;
 
         return $this;
     }
