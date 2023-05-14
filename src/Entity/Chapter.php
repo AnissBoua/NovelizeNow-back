@@ -15,11 +15,11 @@ class Chapter
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit"])]
+    #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit", 'home:get'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit"])]
+    #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit", 'home:get'])]
     private ?string $title = null;
 
     #[ORM\Column(type:'string', columnDefinition: "ENUM('published', 'in_progress')")]
@@ -27,7 +27,7 @@ class Chapter
     private ?string $status = null;
 
     #[ORM\ManyToOne(inversedBy: 'chapters')]
-    #[Groups(["chapter:read", "page:read"])]
+    #[Groups(["chapter:read", "page:read", 'home:get'])]
     private ?Novel $novel = null;
 
     #[ORM\OneToMany(mappedBy: 'chapter', targetEntity: Page::class, cascade: ['remove'])]
