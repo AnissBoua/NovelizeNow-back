@@ -47,7 +47,12 @@ class HomeController extends AbstractController
 
     private function getLastChapters()
     {
-        $lastChapters = $this->em->getRepository(Chapter::class)->findBy([], ['id' => 'DESC'], 8);
+        $lastChapters = $this->em->getRepository(Chapter::class)->findLastChapters(8);
+        foreach ($lastChapters as $key => $chapter) {
+            $chapter['novel'] = $this->em->getRepository(Novel::class)->find($chapter['novel_id']);
+            unset($chapter['novel_id']);
+            $lastChapters[$key] = $chapter;
+        }
         return $lastChapters;
     }
 

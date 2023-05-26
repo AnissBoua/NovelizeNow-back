@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Entity\Image;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\Collection;
@@ -63,6 +64,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private Collection $comments;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     private ?Image $avatar = null;
 
     public function __construct()
@@ -81,6 +83,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
         $user = new User();
         $user->setId($id);
         $user->setEmail($payload["email"]);
+        $user->setName($payload["name"]);
+        $user->setLastname($payload["lastname"]);
+        $user->setUsername($payload["username"]);
         return $user;
     }
 

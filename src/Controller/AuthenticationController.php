@@ -110,4 +110,22 @@ class AuthenticationController extends AbstractController
         JsonResponse::HTTP_OK
         );
     }
+
+    #[Route("/user/avatar", name:"api_user_avatar", methods: ["GET"]), SecurityMiddleware("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function getAvatar(): Response
+    {
+        /** @var User */
+        $user = $this->security->getUser();
+
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+        if(!$user) {
+            return $this->json(['error' => 'Vous devez être connecté pour créer un nouveau roman'], 401);
+        }
+
+        return new JsonResponse([
+            "avatar" => $user->getAvatar()->getFilepath()
+        ],
+        JsonResponse::HTTP_OK
+        );
+    }
 }
