@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Entity\Image;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\Collection;
@@ -17,7 +18,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["novel:get", "user-novel:get", "like:get", 'comment:post'])]
+    #[Groups(["novel:get", "user-novel:get", "like:get", 'comment:post', "home:get", "home:categories"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
@@ -33,18 +34,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "user-novel:get", 'comment:post'])]
+    #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "user-novel:get", 'comment:post'])]
+    #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     private ?string $lastname = null;
 
     #[ORM\Column]
     private ?int $coins = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(["novel:get", "user-novel:get", 'comment:post'])]
+    #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     private ?string $username = null;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Transaction::class)]
@@ -63,6 +64,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private Collection $comments;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     private ?Image $avatar = null;
 
     public function __construct()
@@ -81,7 +83,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
         $user = new User();
         $user->setId($id);
         $user->setEmail($payload["email"]);
+        $user->setName($payload["name"]);
+        $user->setLastname($payload["lastname"]);
+        $user->setUsername($payload["username"]);
         return $user;
+    }
+
+    #[Groups(["home:get", "home:categories"])]
+    public function getNovelCount(): int
+    {
+        $novelCount = 0;
+        foreach ($this->userNovels as $userNovel) {
+            if ($userNovel->getNovel()->getStatus() === 'published') {
+                $novelCount++;
+            }
+        }
+        return $this->userNovels->count();
     }
 
     public function getId(): ?int

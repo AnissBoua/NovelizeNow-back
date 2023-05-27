@@ -17,11 +17,11 @@ class Image
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get", "home:get", "home:categories"])]
     private ?string $filename = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get", "home:get", "home:categories"])]
     private ?string $filepath = null;
 
     #[ORM\OneToMany(mappedBy: 'image', targetEntity: NovelImage::class)]

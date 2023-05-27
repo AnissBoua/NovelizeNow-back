@@ -39,19 +39,29 @@ class NovelRepository extends ServiceEntityRepository
         }
     }
 
-//    /**
-//     * @return Novel[] Returns an array of Novel objects
-//     */
-//    public function findByExampleField($value): array
+
+   public function findMostLikedAndCommentedNovels($value): array
+   {
+        return $this->createQueryBuilder('n')
+        ->join('n.likes', 'l')
+        ->join('n.comments', 'c')
+        ->groupBy('n.id')
+        ->orderBy('COUNT(l.id) + COUNT(c.id)', 'DESC')
+        ->setMaxResults($value)
+        ->getQuery()
+        ->getResult();
+   }
+
+//    public function findBestCategoriesNovels($value): array
 //    {
-//        return $this->createQueryBuilder('n')
-//            ->andWhere('n.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('n.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
+    
+//         return $this->createQueryBuilder('c')
+//         ->join('c.novels', 'n')
+//         ->groupBy('c.id')
+//         ->orderBy('COUNT(n.id)', 'DESC')
+//         ->setMaxResults($value)
+//         ->getQuery()
+//         ->getResult();
 //    }
 
 //    public function findOneBySomeField($value): ?Novel

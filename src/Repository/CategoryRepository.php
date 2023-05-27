@@ -42,17 +42,28 @@ class CategoryRepository extends ServiceEntityRepository
 //    /**
 //     * @return Category[] Returns an array of Category objects
 //     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('c.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+   public function findBestCategoriesNovels($value): array
+   {
+        $categories = $this->createQueryBuilder('c')
+            ->join('c.novel', 'n')
+            ->groupBy('c.id')
+            ->orderBy('COUNT(n.id)', 'DESC')
+            ->setMaxResults($value)
+            ->getQuery()
+            ->getResult();
+
+        foreach ($categories as $key => $categorie) {
+            while (count($categorie->getNovel()->toArray()) > 4) {
+                $last = $categorie->getNovel()->last();
+                $categorie->removeNovel($last);
+            }
+
+            // $categorie->setNovel() = array_slice($categorie->getNovel()->toArray(), 1, 4);
+            $categories[$key] = $categorie;
+
+        }
+        return $categories;
+   }
 
 //    public function findOneBySomeField($value): ?Category
 //    {

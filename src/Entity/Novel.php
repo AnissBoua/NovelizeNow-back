@@ -20,19 +20,19 @@ class Novel
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["novel:get", "novel:edit", "chapter:read","page:read", "user-novel:get", "like:get"])]
+    #[Groups(["novel:get", "novel:edit", "chapter:read","page:read", "user-novel:get", "like:get", "home:get", "home:categories"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit", "chapter:read", "user-novel:get", "like:get"])]
+    #[Groups(["novel:get", "novel:edit", "chapter:read", "user-novel:get", "like:get", "home:get", "home:categories"])]
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit", "user-novel:get", "chapter:read"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get", "chapter:read", "home:get", "home:categories"])]
     private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get", "home:get", "home:categories"])]
     private ?string $resume = null;
 
     #[ORM\Column(type: 'string', columnDefinition: "ENUM('published', 'unpublished')")]
@@ -47,12 +47,12 @@ class Novel
     private ?\DateTimeInterface $date_update = null;
 
     #[ORM\ManyToMany(targetEntity: Category::class, mappedBy: 'novel')]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "home:get"])]
     private Collection $categories;
 
     // delete if novel is deleted
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: NovelImage::class, cascade: ['remove'])]
-    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get", "home:get", "home:categories"])]
     private Collection $novelImages;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Chapter::class, cascade: ['remove'])]
@@ -72,6 +72,9 @@ class Novel
     // #[Groups(["novel:get", "novel:edit"])]
     private Collection $comments;
 
+    #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Like::class)]
+    private Collection $likes;
+
     public function __construct()
     {
         $this->categories = new ArrayCollection();
@@ -80,6 +83,7 @@ class Novel
         $this->userNovels = new ArrayCollection();
         $this->orders = new ArrayCollection();
         $this->comments = new ArrayCollection();
+        $this->likes = new ArrayCollection();
     }
 
     #[Groups(["novel:get"])]
@@ -99,7 +103,7 @@ class Novel
         return $this->id;
     }
 
-    #[Groups(["novel:get", "user-novel:get"])]
+    #[Groups(["novel:get", "user-novel:get", "home:get", "home:categories"])]
     public function getAuthor()
     {
         $relatedUser = $this->userNovels;
@@ -111,19 +115,19 @@ class Novel
         return $user;
     }
 
-    #[Groups(["novel:get", "user-novel:get"])]
+    #[Groups(["novel:get", "user-novel:get", "home:get", "home:categories"])]
     public function getQuantiteChapitre()
     {
         return count($this->getChapters());
     }
 
-    #[Groups(["novel:get", "user-novel:get"])]
+    #[Groups(["novel:get", "user-novel:get", "home:get", "home:categories"])]
     public function getCover()
     {
         return $this->getImageByPosition('cover');
     }
 
-    #[Groups(["novel:get", "user-novel:get"])]
+    #[Groups(["novel:get", "user-novel:get", "home:get", "home:categories"])]
     public function getBanner()
     {
         return $this->getImageByPosition('banner');
@@ -396,4 +400,17 @@ class Novel
 
         return $this;
     }
+
+    #[Groups(["home:get", "home:categories"])]
+    public function getLikesCount(): int
+    {
+        return count($this->likes);
+    }
+
+    #[Groups(["home:get", "home:categories"])]
+    public function getCommentsCount(): int
+    {
+        return count($this->comments);
+    }
+
 }

@@ -14,14 +14,15 @@ class Category
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["category:get", "category:post", "novel:get", "novel:edit"])]
+    #[Groups(["category:get", "category:post", "novel:get", "novel:edit", "home:get", "home:categories"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["category:get", "category:post", "novel:get", "novel:edit"])]
+    #[Groups(["category:get", "category:post", "novel:get", "novel:edit", "home:get", "home:categories"])]
     private ?string $name = null;
 
     #[ORM\ManyToMany(targetEntity: Novel::class, inversedBy: 'categories')]
+    #[Groups(["home:categories"])]
     private Collection $novel;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'childCategories')]

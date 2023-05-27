@@ -39,6 +39,18 @@ class ChapterRepository extends ServiceEntityRepository
         }
     }
 
+    public function findLastChapters($limit): array
+    {
+        return $this->createQueryBuilder('c')
+            ->select('MAX(c.id) as id, MAX(c.title) as title, MAX(c.status) as status, n.id as novel_id')
+            ->join('c.novel', 'n')
+            ->groupBy('n.id')
+            ->orderBy('id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return Chapter[] Returns an array of Chapter objects
 //     */
