@@ -1,12 +1,12 @@
 <?php 
 
-namespace App\Middleware;
+namespace App\Services;
 
 use App\Entity\Novel;
 use App\Entity\User;
 use App\Repository\UserNovelRepository;
 
-class NovelRelationMiddleware {
+class NovelRelationService {
 
     public function __construct(UserNovelRepository $userNovelRepository)
     {

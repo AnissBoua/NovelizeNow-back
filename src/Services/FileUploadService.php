@@ -1,6 +1,6 @@
 <?php 
 
-namespace App\Middleware;
+namespace App\Services;
 
 use DateTime;
 use App\Entity\Image;
@@ -8,7 +8,7 @@ use App\Repository\NovelImageRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 
-class FileUploadMiddleware {
+class FileUploadService {
 
     public function __construct(EntityManagerInterface $em, private NovelImageRepository $novelImageRepository, private string $kernelProjectDir )
     {
