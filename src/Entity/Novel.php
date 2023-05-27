@@ -66,6 +66,7 @@ class Novel
     private Collection $orders;
 
     #[ORM\Column]
+    #[Groups(["novel:get", "novel:edit"])]
     private ?int $price = null;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Comment::class), OrderBy(['id' => 'DESC'])]

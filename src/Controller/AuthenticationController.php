@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Services\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,7 +14,6 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security as SecurityMiddleware;
-use App\Middleware\FileUploadMiddleware;
 
 class AuthenticationController extends AbstractController
 {
@@ -21,11 +21,11 @@ class AuthenticationController extends AbstractController
         EntityManagerInterface $em, 
         SerializerInterface $serializer,
         private Security $security,
-        FileUploadMiddleware $fileUploadMiddleware
+        FileUploadService $fileUploadService
     )
     {
         $this->serializer = $serializer;
-        $this->fileUploadMiddleware = $fileUploadMiddleware;
+        $this->fileUploadService = $fileUploadService;
         $this->em = $em;
     }
 
@@ -50,7 +50,7 @@ class AuthenticationController extends AbstractController
         if ($files->get('avatar')) {
             $avatar = $files->get('avatar');
             $destination = '/uploads/avatars';
-            $image = $this->fileUploadMiddleware->imageUpload($avatar,$destination);
+            $image = $this->fileUploadService->imageUpload($avatar,$destination);
             $user->setAvatar($image);
         }
         $this->em->persist($user);

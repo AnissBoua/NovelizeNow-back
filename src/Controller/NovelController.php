@@ -12,11 +12,11 @@ use App\Entity\UserNovel;
 use App\Entity\NovelImage;
 use App\Repository\UserRepository;
 use App\Repository\NovelRepository;
+use App\Services\FileUploadService;
 use App\Repository\CategoryRepository;
-use App\Middleware\FileUploadMiddleware;
+use App\Services\NovelRelationService;
 use App\Repository\NovelImageRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Middleware\NovelRelationMiddleware;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -34,8 +34,8 @@ class NovelController extends AbstractController
         NovelRepository $novelRepository, 
         UserRepository $userRepository, 
         private SecurityAuth $security,
-        NovelRelationMiddleware $novelRelationMiddleware,
-        FileUploadMiddleware $fileUploadMiddleware,
+        NovelRelationService $novelRelationService,
+        FileUploadService $fileUploadService,
         NovelImageRepository $novelImageRepository,
         CategoryRepository $categoryRepository
     )
@@ -43,8 +43,8 @@ class NovelController extends AbstractController
         $this->em = $em;
         $this->novelRepository = $novelRepository;
         $this->userRepository = $userRepository;
-        $this->novelRelationMiddleware = $novelRelationMiddleware;
-        $this->fileUploadMiddleware = $fileUploadMiddleware;
+        $this->novelRelationService = $novelRelationService;
+        $this->fileUploadService = $fileUploadService;
         $this->novelImageRepository = $novelImageRepository;
         $this->categoryRepository = $categoryRepository;
     }
@@ -73,7 +73,8 @@ class NovelController extends AbstractController
         $novel->setSlug($this->findSlug($slug));
 
         $novel->setResume($data->get('resume'));
-        $novel->setStatus('unpublished');
+        $novel->setPrice($data->get('price'));
+        $novel->setStatus($data->get('status'));
         $novel->setDateCreation(new DateTime());
         $this->em->persist($novel); 
 
@@ -104,7 +105,7 @@ class NovelController extends AbstractController
         $this->em->persist($userNovel);
         $this->em->flush();
         $novel = $serializerInterface->serialize($novel, 'json', ['groups' => 'novel:get']);
-        return new JsonResponse($novel, 200,  [], true);
+        return new JsonResponse($novel, 201,  [], true);
     }
 
     #[Route('/{id}', name: 'get_novel', methods: ['GET'])]
@@ -192,12 +193,14 @@ class NovelController extends AbstractController
 
         $user = $this->security->getUser();
 
-        if (!$this->novelRelationMiddleware->isUserAuthorized($novel, $user)) {
+        if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
             return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
         }
 
         $novel->setTitle($data->get('title'));
         $novel->setResume($data->get('resume'));
+        $novel->setPrice($data->get('price'));
+        $novel->setStatus($data->get('status'));      
         // handle update cover image
         if ($files->get('cover')) {
             $cover = $files->get('cover');
@@ -235,7 +238,7 @@ class NovelController extends AbstractController
         }
 
         $user = $this->security->getUser();
-        if (!$this->novelRelationMiddleware->isUserAuthorized($novel, $user)) {
+        if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
             return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
         }
 
@@ -280,7 +283,7 @@ class NovelController extends AbstractController
     private function setNovelImages($novel, $image, $position) : NovelImage
     {
         $destination = '/uploads/novels';
-        $image = $this->fileUploadMiddleware->imageUpload($image, $destination);
+        $image = $this->fileUploadService->imageUpload($image, $destination);
         if (!$image) {
             throw new Exception("L'image que vous avez essayer de uploder n'a pas etais sauvegarder, verifier que le fichier est bien une image de type jpg, jpeg ou png");
         }
@@ -291,7 +294,7 @@ class NovelController extends AbstractController
 
         if($novelImage){
             $oldImage = $novelImage->getImage();
-            $this->fileUploadMiddleware->imageDelete($oldImage, $destination);
+            $this->fileUploadService->imageDelete($oldImage, $destination);
             $novelImage->setImage($image);
             $this->em->persist($novelImage);
             return $novelImage;
