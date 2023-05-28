@@ -89,7 +89,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
         return $user;
     }
 
-    #[Groups(["home:get", "home:categories"])]
+    #[Groups(["novel:get", "home:get", "home:categories"])]
     public function getNovelCount(): int
     {
         $novelCount = 0;
