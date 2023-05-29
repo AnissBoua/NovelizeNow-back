@@ -157,6 +157,7 @@ class ChapterController extends AbstractController
 
         $arrayResponse = [
             "novelTitle" => $chapter->getNovel()->getTitle(),
+            "chapterTitle" => $chapter->getTitle(),
             "pageState" => $pageState, 
             "pages" => $pages,
             "firstChapter" => $firstChapter
