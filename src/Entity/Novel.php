@@ -116,7 +116,7 @@ class Novel
         return $user;
     }
 
-    #[Groups(["novel:get", "user-novel:get", "home:get", "home:categories"])]
+    #[Groups(["user-novel:get", "novel:get", "user-novel:get", "home:get", "home:categories"])]
     public function getQuantiteChapitre()
     {
         return count($this->getChapters());
@@ -402,13 +402,13 @@ class Novel
         return $this;
     }
 
-    #[Groups(["home:get", "home:categories"])]
+    #[Groups(["user-novel:get", "home:get", "home:categories"])]
     public function getLikesCount(): int
     {
         return count($this->likes);
     }
 
-    #[Groups(["home:get", "home:categories"])]
+    #[Groups(["user-novel:get", "home:get", "home:categories"])]
     public function getCommentsCount(): int
     {
         return count($this->comments);
