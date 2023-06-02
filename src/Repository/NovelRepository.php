@@ -52,6 +52,16 @@ class NovelRepository extends ServiceEntityRepository
         ->getResult();
    }
 
+   public function search($value): array
+   {
+        return $this->createQueryBuilder('n')
+        ->where('n.title LIKE :val')
+        ->setParameter('val', '%'.$value.'%')
+        ->setMaxResults(5)
+        ->getQuery()
+        ->getResult();
+   }
+
 //    public function findBestCategoriesNovels($value): array
 //    {
     
