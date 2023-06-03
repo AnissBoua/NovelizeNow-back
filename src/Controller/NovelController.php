@@ -108,6 +108,15 @@ class NovelController extends AbstractController
         return new JsonResponse($novel, 201,  [], true);
     }
 
+    #[Route('/search', name: 'search_novel', methods: ['GET'])]
+    public function search(Request $request, SerializerInterface $serializerInterface)
+    {
+        $search = $request->query->get('search');
+        $novels = $this->novelRepository->search($search);
+        $novels = $serializerInterface->serialize($novels, 'json', ['groups' => 'novel:get']);
+        return new JsonResponse($novels, 200,  [], true);
+    }
+
     #[Route('/{id}', name: 'get_novel', methods: ['GET'])]
     public function get($id, SerializerInterface $serializerInterface)
     {
