@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CommentRepository::class)]
 class Comment
@@ -20,15 +21,24 @@ class Comment
 
     #[ORM\Column(type: Types::TEXT)]
     #[Groups(['comment:post', "novel:get", "novel:edit"])]
+    #[Assert\NotBlank(message: "The content is required")]
+    #[Assert\Length(
+        min: 1,
+        max: 500,
+        minMessage: "The content must contain at least {{ limit }} characters",
+        maxMessage: "The content must contain at most {{ limit }} characters"
+    )]
     private ?string $content = null;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['comment:post', "novel:get", "novel:edit"])]
+    #[Assert\NotBlank(message: "The user is required")]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank(message: "The novel is required")]
     private ?Novel $novel = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'comments')]
