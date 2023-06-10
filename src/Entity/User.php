@@ -77,7 +77,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
         $this->comments = new ArrayCollection();
     }
 
-    public static function createFromPayload($id, array $payload)
+    public static function createFromPayload($id, array $payload): JWTUserInterface
     {
         // payload come from src\EventSubscriber\JWTSubscriber.php
         $user = new User();

@@ -13,6 +13,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping\OrderBy;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints\Date;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: NovelRepository::class)]
 class Novel
@@ -24,18 +25,44 @@ class Novel
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "The title is required")]
+    #[Assert\Length(
+        min: 1,
+        max: 255,
+        minMessage: "The title must contain at least {{ limit }} characters",
+        maxMessage: "The title must contain at most {{ limit }} characters"
+    )]
     #[Groups(["novel:get", "novel:edit", "chapter:read", "user-novel:get", "like:get", "home:get", "home:categories"])]
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "The slug is required")]
+    #[Assert\Length(
+        min: 1,
+        max: 255,
+        minMessage: "The slug must contain at least {{ limit }} characters",
+        maxMessage: "The slug must contain at most {{ limit }} characters"
+    )]
+    #[Assert\Regex(
+        pattern: '/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+        message: "The slug must contain only lowercase alphanumeric characters and hyphens (-)"
+    )]
     #[Groups(["novel:get", "novel:edit", "user-novel:get", "chapter:read", "home:get", "home:categories"])]
     private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Assert\Length(
+        max: 500,
+        maxMessage: "The resume must contain at most {{ limit }} characters"
+    )]
     #[Groups(["novel:get", "novel:edit", "user-novel:get", "home:get", "home:categories"])]
     private ?string $resume = null;
 
     #[ORM\Column(type: 'string', columnDefinition: "ENUM('published', 'unpublished')")]
+    #[Assert\Choice(
+        choices: ['published', 'unpublished'],
+        message: "The status must be published or unpublished"
+    )]
     #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?string $status = null;
 
@@ -66,6 +93,9 @@ class Novel
     private Collection $orders;
 
     #[ORM\Column]
+    #[Assert\NotBlank(message: "The price is required")]
+    #[Assert\Positive(message: "The price must be positive")]
+    #[Assert\Type(type: 'numeric', message: "The price must be a number")]
     #[Groups(["novel:get", "novel:edit"])]
     private ?int $price = null;
 
