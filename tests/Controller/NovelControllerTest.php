@@ -110,7 +110,7 @@ class NovelControllerTest extends WebTestCase
         ]));
 
         $response = json_decode($this->client->getResponse()->getContent());
-        return $response->token;
+        return $response->token; 
     }
 
 }
