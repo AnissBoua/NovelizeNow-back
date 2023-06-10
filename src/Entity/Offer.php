@@ -8,6 +8,7 @@ use App\Repository\OfferRepository;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OfferRepository::class)]
 class Offer
@@ -20,18 +21,30 @@ class Offer
 
     #[ORM\Column(length: 255)]
     #[Groups(['offer:get'])]
+    #[Assert\NotBlank(message: "The name is required")]
+    #[Assert\Length(
+        min: 1,
+        max: 255,
+        minMessage: "The name must contain at least {{ limit }} characters",
+        maxMessage: "The name must contain at most {{ limit }} characters"
+    )]
     private ?string $name = null;
 
     #[ORM\Column]
     #[Groups(['offer:get'])]
+    #[Assert\NotBlank(message: "The coins is required")]
+    #[Assert\Positive(message: "The coins must be positive")]
     private ?int $coins = null;
 
     #[ORM\Column]
     #[Groups(['offer:get'])]
+    #[Assert\NotBlank(message: "The price is required")]
+    #[Assert\Positive(message: "The price must be positive")]
     private ?float $price = null;
 
     #[ORM\Column]
     #[Groups(['offer:get'])]
+    #[Assert\NotBlank(message: "The active status is required")]
     private ?bool $active = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
