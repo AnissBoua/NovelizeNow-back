@@ -7,6 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Repository\ChapterRepository;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ChapterRepository::class)]
@@ -20,14 +21,22 @@ class Chapter
 
     #[ORM\Column(length: 255)]
     #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit", 'home:get'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 255,
+        minMessage: "The title must contain at least {{ limit }} characters",
+        maxMessage: "The title must contain at most {{ limit }} characters"
+    )]
     private ?string $title = null;
 
     #[ORM\Column(type:'string', columnDefinition: "ENUM('published', 'in_progress')")]
     #[Groups(["chapter:read", "novel:get"])]
+    #[Assert\Choice(choices: ['published', 'in_progress'])]
     private ?string $status = null;
 
     #[ORM\ManyToOne(inversedBy: 'chapters')]
     #[Groups(["chapter:read", "page:read", 'home:get'])]
+    #[Assert\NotBlank]
     private ?Novel $novel = null;
 
     #[ORM\OneToMany(mappedBy: 'chapter', targetEntity: Page::class, cascade: ['remove'])]

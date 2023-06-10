@@ -11,6 +11,8 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Security\User\JWTUserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
+
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUserInterface
@@ -22,6 +24,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Email(
+        message: 'The email {{ value }} is not a valid email.',
+    )]
     private ?string $email = null;
 
     #[ORM\Column]
@@ -31,21 +37,41 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
      * @var string The hashed password
      */
     #[ORM\Column]
+    #[Assert\NotBlank]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 255,
+        minMessage: "The title must contain at least {{ limit }} characters",
+        maxMessage: "The title must contain at most {{ limit }} characters"
+    )]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 255,
+        minMessage: "The title must contain at least {{ limit }} characters",
+        maxMessage: "The title must contain at most {{ limit }} characters"
+    )]
     private ?string $lastname = null;
 
     #[ORM\Column]
+    #[Assert\PositiveOrZero]
     private ?int $coins = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 255,
+        minMessage: "The title must contain at least {{ limit }} characters",
+        maxMessage: "The title must contain at most {{ limit }} characters"
+    )]
     private ?string $username = null;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Transaction::class)]
@@ -65,6 +91,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
+    #[Assert\NotBlank]
     private ?Image $avatar = null;
 
     public function __construct()
