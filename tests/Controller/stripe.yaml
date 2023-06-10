@@ -1,0 +1,80 @@
+App\Entity\Novel:
+  novel_1:
+    title: Novel 1
+    resume: Description 1
+    slug: novel-1
+    status: published
+    price: 10
+    date_creation: <(new DateTimeImmutable('now'))>
+    categories: 
+      - '@category_1'
+      - '@category_2'
+    novelImages:
+      - '@novelImage_1'
+      - '@novelImage_2'
+    chapters:
+      - '@chapter_1'
+      - '@chapter_2'
+    userNovels:
+      - '@userNovel_1'
+      - '@userNovel_2'
+    # orders:
+    #   - '@order_1'
+    #   - '@order_2'
+    # comments:
+    #   - '@comment_1'
+    #   - '@comment_2'
+    # likes:
+    #   - '@like_1'
+    #   - '@like_2'
+
+App\Entity\Category:
+  category_{1..5}:
+    name: Category <current()>
+
+App\Entity\NovelImage:
+  novelImage_{1..2}:
+    image: '@image_<current()>'
+    novel: '@novel_1'
+    img_position: <randomElement(["banner", "cover"])>
+
+App\Entity\Image:
+  image_{1..2}:
+    filename: 'image-<current()>.jpg'
+    filepath: 'uploads/novels/image-<current()>.jpg'
+  avatar_{1..5}:
+    filename: 'avatar-<current()>.jpg'
+    filepath: 'uploads/avatars/avatar-<current()>.jpg'
+
+App\Entity\Chapter:
+  chapter_{1..5}:
+    title: Chapter <current()>
+    novel: '@novel_1'
+    status: <randomElement(["published", "in_progress"])>
+    page_state: [];
+
+App\Entity\User:
+  user_{1..5}:
+    email: user<current()>\@gmail.com
+    password: \$2y\$10\$b9yy1H/TXkZVliN4oivL7u4KKKUORFrDpasx7A8STKoZa/TOUULhS
+    roles: ["ROLE_USER"]
+    name: User <current()>
+    lastname: Lastname <current()>
+    username: username<current()>
+    coins: 0
+    avatar: '@avatar_<current()>'
+
+App\Entity\UserNovel:
+  userNovel_{1..5}:
+    user: '@user_1'
+    novel: '@novel_1'
+    relation: author
+
+App\Entity\Offer:
+  offer_{1..5}:
+    name: offer_<current()>
+    coins: 2500
+    price: 20
+    active: true
+    date_start: <(new DateTimeImmutable('now'))>
+    date_end: null
