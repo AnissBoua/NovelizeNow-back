@@ -111,8 +111,16 @@ class NovelController extends AbstractController
     #[Route('/search', name: 'search_novel', methods: ['GET'])]
     public function search(Request $request, SerializerInterface $serializerInterface)
     {
+        if (!$request->query->get('search')) {
+            return $this->json(['error' => 'No search'], 400);
+        }
         $search = $request->query->get('search');
         $novels = $this->novelRepository->search($search);
+
+        if (!$novels) {
+            return $this->json(['error' => 'No found'], 404);
+        }
+
         $novels = $serializerInterface->serialize($novels, 'json', ['groups' => 'novel:get']);
         return new JsonResponse($novels, 200,  [], true);
     }
