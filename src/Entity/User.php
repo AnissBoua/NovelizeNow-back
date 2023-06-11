@@ -109,6 +109,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
         // payload come from src\EventSubscriber\JWTSubscriber.php
         $user = new User();
         $user->setId($id);
+        $user->setRoles($payload["roles"]);
         $user->setEmail($payload["email"]);
         $user->setName($payload["name"]);
         $user->setLastname($payload["lastname"]);

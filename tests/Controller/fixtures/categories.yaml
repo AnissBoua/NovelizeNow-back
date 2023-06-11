@@ -1,0 +1,21 @@
+App\Entity\Category:
+  category_{1..5}:
+    name: Category <current()>
+
+App\Entity\User:
+  user_1:
+    email: user1\@gmail.com
+    password: \$2y\$10\$b9yy1H/TXkZVliN4oivL7u4KKKUORFrDpasx7A8STKoZa/TOUULhS
+    roles: ["ROLE_ADMIN"]
+    name: User 1
+    lastname: Lastname 1
+    username: username1
+    coins: 0
+  user_2:
+    email: user2\@gmail.com
+    password: \$2y\$10\$b9yy1H/TXkZVliN4oivL7u4KKKUORFrDpasx7A8STKoZa/TOUULhS
+    roles: ["ROLE_USER"]
+    name: User 2
+    lastname: Lastname 2
+    username: username2
+    coins: 0
