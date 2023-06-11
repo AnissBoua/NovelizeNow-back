@@ -35,13 +35,13 @@ class CommentController extends AbstractController
         $data = json_decode($request->getContent(), false);
         $novel = $this->em->getRepository(Novel::class)->find($data->novel);
         if(!$novel) {
-            throw new Exception('Novel not found.');
+            return $this->json(['error' => 'Novel not found.'], Response::HTTP_NOT_FOUND);
         }
         
         /** @var \App\Entity\User $user */
         $user = $this->security->getUser();
         if(!$user) {
-            throw new Exception('Vous devez être connecté pour effectuer cette action.');
+            return $this->json(['error' => 'Vous devez être connecté pour effectuer cette action.'], Response::HTTP_UNAUTHORIZED);
         }
 
         $user = $this->em->getRepository(User::class)->find($user->getId());
@@ -49,7 +49,7 @@ class CommentController extends AbstractController
         if (isset($data->parent)) {
             $parent = $this->em->getRepository(Comment::class)->find($data->parent);
             if ($parent->getComment()) {
-                throw new Exception('You can\'t reply to a reply.');
+                return $this->json(['error' => 'You can\'t reply to a reply.'], Response::HTTP_BAD_REQUEST);
             }
         }
 
@@ -75,19 +75,19 @@ class CommentController extends AbstractController
         $data = json_decode($request->getContent(), false);
         $comment = $this->em->getRepository(Comment::class)->find($id);
         if(!$comment) {
-            throw new Exception('Comment not found.');
+            return $this->json(['error' => 'Comment not found.'], Response::HTTP_NOT_FOUND);
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->security->getUser();
         if(!$user) {
-            throw new Exception('Vous devez être connecté pour effectuer cette action.');
+            return $this->json(['error' => 'Vous devez être connecté pour effectuer cette action.'], Response::HTTP_UNAUTHORIZED);
         }
 
         $user = $this->em->getRepository(User::class)->find($user->getId());
 
         if ($comment->getUser()->getId() !== $user->getId()) {
-            throw new Exception('You can\'t update this comment.');
+            return $this->json(['error' => 'You can\'t update this comment.'], Response::HTTP_FORBIDDEN);
         }
 
         $comment->setContent($data->content);
@@ -104,24 +104,24 @@ class CommentController extends AbstractController
     {
         $comment = $this->em->getRepository(Comment::class)->find($id);
         if(!$comment) {
-            throw new Exception('Comment not found.');
+            return $this->json(['error' => 'Comment not found.'], Response::HTTP_NOT_FOUND);
         }
 
         /** @var \App\Entity\User $user */
         $user = $this->security->getUser();
         if(!$user) {
-            throw new Exception('Vous devez être connecté pour effectuer cette action.');
+            return $this->json(['error' => 'Vous devez être connecté pour effectuer cette action.'], Response::HTTP_UNAUTHORIZED);
         }
 
         $user = $this->em->getRepository(User::class)->find($user->getId());
 
         if ($comment->getUser()->getId() !== $user->getId()) {
-            throw new Exception('You can\'t delete this comment.');
+            return $this->json(['error' => 'You can\'t delete this comment.'], Response::HTTP_FORBIDDEN);
         }
 
         $this->em->remove($comment);
         $this->em->flush();
 
-        return $this->json(null, Response::HTTP_NO_CONTENT);
+        return $this->json(null, Response::HTTP_OK);
     }
 }
