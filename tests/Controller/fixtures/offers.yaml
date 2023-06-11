@@ -1,0 +1,6 @@
+App\Entity\Offer:
+  offer_{1..4}:
+    name: Offer <current()>
+    coins: <randomNumber(2)>
+    price: <randomNumber(2)>
+    active: <randomElement([true, false])>
