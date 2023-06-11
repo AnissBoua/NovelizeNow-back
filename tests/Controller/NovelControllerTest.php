@@ -2,13 +2,8 @@
 
 namespace App\Tests\Controller;
 
-use App\Entity\Novel;
-use App\Entity\Category;
-use App\DataFixtures\NovelFixture;
-use Doctrine\Common\DataFixtures\Loader;
-use Symfony\Component\Console\Input\StringInput;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Bundle\FrameworkBundle\Console\Application;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 
 class NovelControllerTest extends WebTestCase
@@ -85,18 +80,196 @@ class NovelControllerTest extends WebTestCase
     public function testPostNovel()
     {
         $token = $this->getJwtToken();
-        $this->client->request('POST', '/api/novel/', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
-        ], 
-        json_encode([
+        $this->client->request('POST', '/api/novel/', [
             'title' => 'Novel 4',
             'resume' => 'Description 4',
             'status' => 'unpublished',
-            'categories' => [1, 2],
+            'category' => [1, 2],
             'price' => 100,
-        ]));
+        ], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
         $this->assertEquals(201, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testPostNovelNoToken()
+    {
+        $this->client->request('POST', '/api/novel/', [
+            'title' => 'Novel 4',
+            'resume' => 'Description 4',
+            'status' => 'unpublished',
+            'category' => [1, 2],
+            'price' => 100,
+        ], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+        ]);
+        $this->assertEquals(401, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testPostNovelWithFiles()
+    {
+        $token = $this->getJwtToken();
+        $cover = new UploadedFile('public\uploads\test\20230518101205-A8w4O3p6bC9yQ2nA-zelda-breath-of-the-wild.png', '20230518101205-A8w4O3p6bC9yQ2nA-zelda-breath-of-the-wild.png');
+        $banner = new UploadedFile('public\uploads\test\20230518101205-A8w4O3p6bC9yQ2nA-zelda-breath-of-the-wild-banner.png', '20230518101205-A8w4O3p6bC9yQ2nA-zelda-breath-of-the-wild-banner.png');
+        $this->client->request('POST', '/api/novel/', [
+            'title' => 'Novel 4',
+            'resume' => 'Description 4',
+            'status' => 'unpublished',
+            'category' => [1, 2],
+            'price' => 100,
+        ], 
+        [
+            'cover' => $cover,
+            'banner' => $banner,
+        ], 
+        [
+            'CONTENT_TYPE' => 'multipart/form-data',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+        $this->assertEquals(201, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testEditNovel()
+    {
+        $token = $this->getJwtToken();
+        // POST car c'est du multipart/form-data
+        $this->client->request('POST', '/api/novel/1', [
+            'title' => 'Novel 2',
+            'resume' => 'Description 2',
+            'status' => 'published',
+            'category' => [3, 4],
+            'price' => 98,
+        ], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+        $this->assertEquals(200, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testEditNovelWithFiles()
+    {
+        $token = $this->getJwtToken();
+        $cover = new UploadedFile('public\uploads\test\20230518101205-A8w4O3p6bC9yQ2nA-zelda-breath-of-the-wild.png', '20230518101205-A8w4O3p6bC9yQ2nA-zelda-breath-of-the-wild.png');
+        $banner = new UploadedFile('public\uploads\test\20230518101205-A8w4O3p6bC9yQ2nA-zelda-breath-of-the-wild-banner.png', '20230518101205-A8w4O3p6bC9yQ2nA-zelda-breath-of-the-wild-banner.png');
+        // POST car c'est du multipart/form-data
+        $this->client->request('POST', '/api/novel/1', [
+            'title' => 'Novel 2',
+            'resume' => 'Description 2',
+            'status' => 'published',
+            'category' => [3, 4],
+            'price' => 98,
+        ], 
+        [
+            'cover' => $cover,
+            'banner' => $banner,
+        ], 
+        [
+            'CONTENT_TYPE' => 'multipart/form-data',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+        $this->assertEquals(200, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testEditNovelNotFound()
+    {
+        $token = $this->getJwtToken();
+        // POST car c'est du multipart/form-data
+        $this->client->request('POST', '/api/novel/999', [
+            'title' => 'Novel 2',
+            'resume' => 'Description 2',
+            'status' => 'published',
+            'category' => [3, 4],
+            'price' => 98,
+        ], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+        $this->assertEquals(404, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testEditNovelNoToken()
+    {
+        // POST car c'est du multipart/form-data
+        $this->client->request('POST', '/api/novel/1', [
+            'title' => 'Novel 2',
+            'resume' => 'Description 2',
+            'status' => 'published',
+            'category' => [3, 4],
+            'price' => 98,
+        ], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+        ]);
+        $this->assertEquals(401, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testEditNovelInvalidUser()
+    {
+        $token = $this->getInvalidUserJwtToken();
+        // POST car c'est du multipart/form-data
+        $this->client->request('POST', '/api/novel/1', [
+            'title' => 'Novel 2',
+            'resume' => 'Description 2',
+            'status' => 'published',
+            'category' => [3, 4],
+            'price' => 98,
+        ], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+        $this->assertEquals(401, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testDeleteNovel()
+    {
+
+        $token = $this->getJwtToken();
+        $this->client->request('DELETE', '/api/novel/1', [], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+        $this->assertEquals(200, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testDeleteNovelNotFound()
+    {
+
+        $token = $this->getJwtToken();
+        $this->client->request('DELETE', '/api/novel/999', [], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+        $this->assertEquals(404, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testDeleteNovelNoToken()
+    {
+
+        $this->client->request('DELETE', '/api/novel/1', [], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+        ]);
+        $this->assertEquals(401, $this->client->getResponse()->getStatusCode());
+        $this->assertJson($this->client->getResponse()->getContent());
+    }
+
+    public function testDeleteNovelInvalidUser()
+    {
+        $token = $this->getInvalidUserJwtToken();
+        $this->client->request('DELETE', '/api/novel/1', [], [], [
+            'CONTENT_TYPE' => 'multipart/form-data',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+        $this->assertEquals(401, $this->client->getResponse()->getStatusCode());
         $this->assertJson($this->client->getResponse()->getContent());
     }
 
@@ -106,6 +279,19 @@ class NovelControllerTest extends WebTestCase
         ], 
         json_encode([
             'email' => 'user1@gmail.com',
+            'password' => 'password',
+        ]));
+
+        $response = json_decode($this->client->getResponse()->getContent());
+        return $response->token; 
+    }
+
+    private function getInvalidUserJwtToken(){
+        $this->client->request('POST', '/api/login', [], [], [
+            'CONTENT_TYPE' => 'application/json'
+        ], 
+        json_encode([
+            'email' => 'user2@gmail.com',
             'password' => 'password',
         ]));
 
