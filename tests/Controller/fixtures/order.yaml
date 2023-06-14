@@ -1,0 +1,59 @@
+App\Entity\Novel:
+  novel_1:
+    title: Novel 1
+    resume: Description 1
+    slug: novel-1
+    status: published
+    price: 10
+    date_creation: <(new DateTimeImmutable('now'))>
+    userNovels:
+      - '@userNovel_1'
+
+App\Entity\UserNovel:
+  userNovel_1:
+    user: '@user_1'
+    novel: '@novel_1'
+    relation: author
+
+
+App\Entity\User:
+  user_1:
+    email: user1\@gmail.com
+    password: \$2y\$10\$b9yy1H/TXkZVliN4oivL7u4KKKUORFrDpasx7A8STKoZa/TOUULhS
+    roles: ["ROLE_USER"]
+    name: User 1
+    lastname: Lastname 1
+    username: username1
+    coins: 0
+  user_2:
+    email: user2\@gmail.com
+    password: \$2y\$10\$b9yy1H/TXkZVliN4oivL7u4KKKUORFrDpasx7A8STKoZa/TOUULhS
+    roles: ["ROLE_USER"]
+    name: User 2
+    lastname: Lastname 2
+    username: username2
+    coins: 100
+  user_3:
+    email: user3\@gmail.com
+    password: \$2y\$10\$b9yy1H/TXkZVliN4oivL7u4KKKUORFrDpasx7A8STKoZa/TOUULhS
+    roles: ["ROLE_USER"]
+    name: User 3
+    lastname: Lastname 3
+    username: username3
+    coins: 0
+  user_4:
+    email: user4\@gmail.com
+    password: \$2y\$10\$b9yy1H/TXkZVliN4oivL7u4KKKUORFrDpasx7A8STKoZa/TOUULhS
+    roles: ["ROLE_USER"]
+    name: User 4
+    lastname: Lastname 4
+    username: username4
+    coins: 100
+
+App\Entity\Order:
+  order_1:
+    user: '@user_4'
+    novel: '@novel_1'
+    coins: 10
+    date_order: <(new DateTimeImmutable('now'))>
+  

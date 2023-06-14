@@ -34,14 +34,25 @@ class OrderController extends AbstractController
         /** @var \App\Entity\User $user */
         $user = $this->security->getUser();
         if(!$user) {
-            throw new Exception('Vous devez être connecté pour effectuer cette action.');
+            return $this->json([
+                'message' => 'Vous devez être connecté pour effectuer cette action.'
+            ], 401);
         }
         $user = $this->em->getRepository(User::class)->find($user->getId());
 
         $data = json_decode($request->getContent(), false);
         $novel = $this->em->getRepository(Novel::class)->find($data->novel);
+
+        if (!$novel) {
+            return $this->json([
+                'message' => 'This Novel does not exist.'
+            ], 404);
+        }
+
         if ($novel->getPrice() > $user->getCoins()) {
-            throw new Exception('You don\'t have enough coins to buy this novel.');
+            return $this->json([
+                'message' => 'You don\'t have enough coins to buy this Novel.'
+            ], 400);
         }
 
         // Check if user already bought this novel
@@ -49,6 +60,12 @@ class OrderController extends AbstractController
             'user' => $user,
             'novel' => $novel
         ]);
+
+        if ($order) {
+            return $this->json([
+                'message' => 'You already bought this Novel.'
+            ], 400);
+        }
 
         $order = new Order();
         $order->setUser($user);
@@ -73,7 +90,7 @@ class OrderController extends AbstractController
         return $this->json([
             'order' => $order,
             'user_coins' => $coins
-        ], 200);
+        ], 201);
     }
 
     #[Route('/novel/{slug}', name: 'verify_user_bought_novel', methods: ['GET']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
@@ -81,14 +98,18 @@ class OrderController extends AbstractController
         /** @var \App\Entity\User $user */
         $user = $this->security->getUser();
         if(!$user) {
-            throw new Exception('Vous devez être connecté pour effectuer cette action.');
+            return $this->json([
+                'message' => 'You must be logged in to perform this action.'
+            ], 401);
         }
 
         $novel = $this->em->getRepository(Novel::class)->findOneBy([
             'slug' => $slug
         ]);
         if (!$novel) {
-            throw new Exception('Cette novel n\'existe pas.', 404);
+            return $this->json([
+                'message' => 'This Novel does not exist.'
+            ], 404);
         }
 
         $order = $this->em->getRepository(Order::class)->findOneBy([
