@@ -3,7 +3,6 @@
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 
 class OrderControllerTest extends WebTestCase

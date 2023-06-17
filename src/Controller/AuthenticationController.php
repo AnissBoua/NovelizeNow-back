@@ -36,6 +36,15 @@ class AuthenticationController extends AbstractController
         $data = $request->request;
         $files = $request->files;
 
+        if (!$data->get('name') || !$data->get('lastname') || !$data->get('email') || !$data->get('password')) {
+            return new JsonResponse([
+                "status" => "error",
+                "message" => "Missing required fields"
+            ],
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
+
         $user = new User();
         
         $user->setName($data->get('name'));
@@ -69,7 +78,7 @@ class AuthenticationController extends AbstractController
         // lexik do everything
     }
 
-    #[Route("/me", name:"api_me", methods:["GET"])]
+    #[Route("/me", name:"api_me", methods:["GET"]), SecurityMiddleware("is_granted('IS_AUTHENTICATED_FULLY')")]
     public function me()
     {
         $user = $this->security->getUser();
@@ -120,6 +129,14 @@ class AuthenticationController extends AbstractController
         $user = $this->em->getRepository(User::class)->find($user->getId());
         if(!$user) {
             return $this->json(['error' => 'Vous devez être connecté pour créer un nouveau roman'], 401);
+        }
+
+        if (!$user->getAvatar()) {
+            return new JsonResponse([
+                "avatar" => null
+            ],
+            JsonResponse::HTTP_OK
+            );
         }
 
         return new JsonResponse([
