@@ -17,6 +17,7 @@ App\Entity\Novel:
       - '@chapter_2'
     userNovels:
       - '@userNovel_1'
+      - '@userNovel_2'
     # orders:
     #   - '@order_1'
     #   - '@order_2'
@@ -64,13 +65,16 @@ App\Entity\User:
     avatar: '@avatar_<current()>'
 
 App\Entity\UserNovel:
-  userNovel_1:
+  userNovel_{1..5}:
     user: '@user_1'
     novel: '@novel_1'
     relation: author
 
-App\Entity\Page:
-  page_{1..5}:
-    content: Page <current()>
-    html: page
-    chapter: '@chapter_1'
+App\Entity\Offer:
+  offer_{1..5}:
+    name: offer_<current()>
+    coins: 2500
+    price: 20
+    active: true
+    date_start: <(new DateTimeImmutable('now'))>
+    date_end: null
