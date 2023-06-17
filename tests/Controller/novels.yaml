@@ -69,3 +69,9 @@ App\Entity\UserNovel:
     user: '@user_1'
     novel: '@novel_1'
     relation: author
+
+App\Entity\Page:
+  page_{1..5}:
+    content: Page <current()>
+    html: page
+    chapter: '@chapter_1'
