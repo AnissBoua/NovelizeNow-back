@@ -70,8 +70,11 @@ App\Entity\UserNovel:
     novel: '@novel_1'
     relation: author
 
-App\Entity\Page:
-  page_{1..5}:
-    content: Page <current()>
-    html: page
-    chapter: '@chapter_1'
+App\Entity\Offer:
+  offer_{1..5}:
+    name: offer_<current()>
+    coins: 2500
+    price: 20
+    active: true
+    date_start: <(new DateTimeImmutable('now'))>
+    date_end: null

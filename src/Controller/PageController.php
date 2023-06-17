@@ -38,7 +38,7 @@ class PageController extends AbstractController
         $user = $this->security->getUser();
 
         if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
-            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
+            return $this->json(['error' => 'Vous n\'êtes pas l\'autheur de ce roman, vous ne pouvez pas créer une page : '. $novel->getId()], 404);
         }
         $page->setContent($data["content"]);
         $page->setHtml($data["html"]);
