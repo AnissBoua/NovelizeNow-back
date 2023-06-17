@@ -1,8 +1,8 @@
 App\Entity\Novel:
-  novel_1:
-    title: Novel 1
-    resume: Description 1
-    slug: novel-1
+  novel_{1..5}:
+    title: Novel <current()>
+    resume: Description <current()>
+    slug: novel-<current()>
     status: published
     price: 10
     date_creation: <(new DateTimeImmutable('now'))>
@@ -16,17 +16,12 @@ App\Entity\Novel:
       - '@chapter_1'
       - '@chapter_2'
     userNovels:
-      - '@userNovel_1'
-      - '@userNovel_2'
-    # orders:
-    #   - '@order_1'
-    #   - '@order_2'
-    # comments:
-    #   - '@comment_1'
-    #   - '@comment_2'
+      - <randomElement([@userNovel_1, @userNovel_2, @userNovel_3, @userNovel_4, @userNovel_5])>
+    comments:
+      - '@comment_1'
+      - '@comment_2'
     # likes:
     #   - '@like_1'
-    #   - '@like_2'
 
 App\Entity\Category:
   category_{1..5}:
@@ -49,7 +44,7 @@ App\Entity\Image:
 App\Entity\Chapter:
   chapter_{1..5}:
     title: Chapter <current()>
-    novel: '@novel_1'
+    novel: '@novel_<current()>'
     status: <randomElement(["published", "in_progress"])>
     page_state: [];
 
@@ -66,12 +61,22 @@ App\Entity\User:
 
 App\Entity\UserNovel:
   userNovel_{1..5}:
-    user: '@user_1'
-    novel: '@novel_1'
+    user: '@user_<current()>'
+    novel: '@novel_<current()>'
     relation: author
 
-App\Entity\Page:
-  page_{1..5}:
-    content: Page <current()>
-    html: page
-    chapter: '@chapter_1'
+App\Entity\Comment:
+  comment_{1..5}:
+    user: '@user_<current()>'
+    novel: '@novel_1'
+    content: Comment <current()>
+  comment_6:
+    user: '@user_1'
+    novel: '@novel_1'
+    content: Comment 6
+    comment: '@comment_1'
+
+App\Entity\Like:
+  like_{1..5}:
+    user: '@user_<current()>'
+    novel: '@novel_1'

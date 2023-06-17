@@ -1,0 +1,36 @@
+App\Entity\Novel:
+  novel_1:
+    title: Novel 1
+    resume: Description 1
+    slug: novel-1
+    status: published
+    price: 10
+    date_creation: <(new DateTimeImmutable('now'))>
+    chapters:
+      - '@chapter_1'
+      - '@chapter_2'
+    userNovels:
+      - '@userNovel_1'
+
+App\Entity\Chapter:
+  chapter_{1..5}:
+    title: Chapter <current()>
+    novel: '@novel_1'
+    status: <randomElement(["published", "in_progress"])>
+    page_state: [];
+
+App\Entity\User:
+  user_{1..5}:
+    email: user<current()>\@gmail.com
+    password: \$2y\$10\$b9yy1H/TXkZVliN4oivL7u4KKKUORFrDpasx7A8STKoZa/TOUULhS
+    roles: ["ROLE_USER"]
+    name: User <current()>
+    lastname: Lastname <current()>
+    username: username<current()>
+    coins: 0
+
+App\Entity\UserNovel:
+  userNovel_1:
+    user: '@user_1'
+    novel: '@novel_1'
+    relation: author

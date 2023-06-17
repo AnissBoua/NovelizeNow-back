@@ -37,7 +37,8 @@ class FileUploadService {
         $image->setFilepath($destination . '/' . $filename);
 
         $projectDir = $this->kernelProjectDir;
-        $file->move($projectDir . '/public' . $destination, $filename);
+        copy($file->getPathname(), $projectDir . '/public' . $destination . '/' . $filename);
+        // $file->move($projectDir . '/public' . $destination, $filename);
 
         $this->em->persist($image);
         $this->em->flush();
@@ -61,7 +62,9 @@ class FileUploadService {
         $this->em->remove($image);
         $this->em->flush();
         $projectDir = $this->kernelProjectDir;
-        unlink($projectDir . '/public'.$destination.'/'.$filename);
+        if (file_exists($projectDir . '/public'.$destination.'/'.$filename)) {
+            unlink($projectDir . '/public'.$destination.'/'.$filename);
+        }
 
         return true;
     }

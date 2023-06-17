@@ -5,7 +5,10 @@ namespace App\Controller;
 use App\Entity\Category;
 use App\Repository\CategoryRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
+use Symfony\Bundle\SecurityBundle\Security as SecurityAuth;
+
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,6 +20,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 class CategoryController extends AbstractController
 {
     public function __construct(
+        private SecurityAuth $security,
         CategoryRepository $categoryRepository, 
         EntityManagerInterface $em,
         SerializerInterface $serializerInterface
@@ -33,7 +37,7 @@ class CategoryController extends AbstractController
         $categories = $this->categoryRepository->findAll();
 
         $categories = $this->serializerInterface->serialize($categories, 'json', ['groups' => 'category:get']);
-        return new JsonResponse($categories, 201, [], true);
+        return new JsonResponse($categories, 200, [], true);
     }
 
     #[Route('/{id}', name: 'get_category',  methods: ['GET'])]
@@ -41,11 +45,15 @@ class CategoryController extends AbstractController
     {
         $category = $this->categoryRepository->find($id);
 
+        if (!$category) {
+            return $this->json(['error' => 'No found id: '. $id], 404);
+        }
+
         $category = $this->serializerInterface->serialize($category, 'json', ['groups' => 'category:get']);
-        return new JsonResponse($category, 201, [], true);
+        return new JsonResponse($category, 200, [], true);
     }
 
-    #[Route('/', name: 'add_category', methods: ['POST'])]
+    #[Route('/', name: 'add_category', methods: ['POST']), IsGranted("ROLE_ADMIN")]
     public function post(Request $request)
     {
         $data = json_decode($request->getContent(), true);
@@ -64,20 +72,21 @@ class CategoryController extends AbstractController
         return new JsonResponse($category, 201, [], true);
     }
 
-    #[Route('/{id}', name: 'edit_category', methods: ['PUT'])]
+    #[Route('/{id}', name: 'edit_category', methods: ['PUT']), IsGranted("ROLE_ADMIN")]
     public function edit($id, Request $request)
     {
         $data = json_decode($request->getContent(), true);
         $category = $this->categoryRepository->find($id);
+
+        if (!$category) {
+            return $this->json(['error' => 'No found id: '. $id], 404);
+        }
+
         $category->setName($data['name']);
 
-        if (isset($data['parent']) || is_null($data['parent'])) {
-            if (is_null($data['parent'])) {
-                $category->setParent(null);
-            }else {
-                $parent = $this->categoryRepository->find($data['parent']);
-                $category->setParent($parent);
-            }
+        if (isset($data['parent'])) {
+            $parent = $this->categoryRepository->find($data['parent']);
+            $category->setParent($parent);
         } 
 
         $this->em->persist($category);
@@ -87,7 +96,7 @@ class CategoryController extends AbstractController
         return new JsonResponse($category, 200, [], true);
     }
 
-    #[Route('/{id}', name: 'delete_category', methods: ['DELETE']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
+    #[Route('/{id}', name: 'delete_category', methods: ['DELETE']), IsGranted("ROLE_ADMIN")]
     public function delete($id)
     {
         $category = $this->categoryRepository->find($id);

@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\SecurityBundle\Security as SecurityAuth;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 
 #[Route('/like')]
 class LikeController extends AbstractController
@@ -24,12 +25,16 @@ class LikeController extends AbstractController
         $this->serializer = $serializer;
     }
 
-    #[Route('/', name: 'addLike', methods: ['POST'])]
+    #[Route('/', name: 'addLike', methods: ['POST']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
     public function addLike(Request $request)
     {
         $data = json_decode($request->getContent(),true);
         $user = $this->em->getRepository(User::class)->findOneBy(["id"=>$this->security->getUser()->getId()]);
         $novel = $this->em->getRepository(Novel::class)->findOneBy(["id"=>$data["novel"]]);
+        if (!$novel) {
+            return $this->json(['error' => 'Novel not found.'], Response::HTTP_NOT_FOUND);
+        }
+
         $like = $this->em->getRepository(Like::class)->findOneBy(["user"=>$user->getId(),"novel"=>$data["novel"]]);
 
         if($like === null){
@@ -39,7 +44,7 @@ class LikeController extends AbstractController
             $this->em->persist($like);
             $this->em->flush();
             $like = $this->serializer->serialize($like, 'json', ['groups' => 'like:get']);
-            return new JsonResponse($like, 200,  [], true);
+            return new JsonResponse($like, 201,  [], true);
         } else {
             $this->em->remove($like);
             $this->em->flush();
@@ -61,7 +66,7 @@ class LikeController extends AbstractController
         return new JsonResponse(['count' => $count]);
     }
 
-    #[Route('/liked/{id}', name: 'alreadyLiked', methods: ['GET'])]
+    #[Route('/liked/{id}', name: 'alreadyLiked', methods: ['GET']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
     public function novelAlreadyLiked($id)
     {
         $user = $this->em->getRepository(User::class)->findOneBy(["id"=>$this->security->getUser()->getId()]);

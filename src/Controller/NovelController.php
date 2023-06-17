@@ -211,7 +211,7 @@ class NovelController extends AbstractController
         $user = $this->security->getUser();
 
         if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
-            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
+            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 401);
         }
 
         $novel->setTitle($data->get('title'));
@@ -256,7 +256,7 @@ class NovelController extends AbstractController
 
         $user = $this->security->getUser();
         if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
-            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
+            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 401);
         }
 
         $this->em->remove($novel);

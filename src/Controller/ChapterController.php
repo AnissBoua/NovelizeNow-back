@@ -39,10 +39,13 @@ class ChapterController extends AbstractController
         $data = json_decode($request->getContent(),true);
         $chapter = new Chapter();
         $novel = $this->novelRepo->find($data["novel"]);
+        if (!$novel) {
+            return $this->json(['error' => 'Not found novel, id: '. $data["novel"]], 404);
+        }
         $user = $this->security->getUser();
         
         if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
-            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
+            return $this->json(['error' => 'Vous n\'êtes pas l\'autheur de ce roman, vous ne pouvez pas créer un chapitre : '. $novel->getId()], 403);
         }
         $chapter->setTitle($data["title"]);
         $chapter->setStatus($data["status"]);
@@ -50,7 +53,7 @@ class ChapterController extends AbstractController
         $this->em->persist($chapter);
         $this->em->flush();
         $json = $serializer->serialize($chapter, 'json', ['groups' => 'chapter:read']);
-        return new JsonResponse($json, 200, [], true);
+        return new JsonResponse($json, 201, [], true);
     }
 
     #[Route('/chapter/{id}', methods: ['GET'])]
@@ -75,7 +78,7 @@ class ChapterController extends AbstractController
         $user = $this->security->getUser();
         
         if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
-            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
+            return $this->json(['error' => 'Vous n\'êtes pas l\'autheur de ce roman, vous ne pouvez pas modifier un chapitre : '. $novel->getId()], 403);
         }
 
         $chapter->setTitle($data["title"]);
@@ -84,7 +87,7 @@ class ChapterController extends AbstractController
         $this->em->persist($chapter);
         $this->em->flush();
         $json = $serializer->serialize($chapter, 'json', ['groups' => 'chapter:read']);
-        return new JsonResponse($json, 202, [], true);
+        return new JsonResponse($json, 200, [], true);
     }
 
     // private function addPageToChapter(int $id){
@@ -110,7 +113,7 @@ class ChapterController extends AbstractController
         $user = $this->security->getUser();
 
         if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
-            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 404);
+            return $this->json(['error' => 'Vous éte pas l\'author de cette novel du coup vous ne pouver pas le supprimer : '. $novel->getId()], 403);
         }
 
         $this->em->remove($chapter);
@@ -141,8 +144,7 @@ class ChapterController extends AbstractController
                             "novel" => $novel
                         ]);
             if (!$order) {
-                throw new Exception("You haven't buy this novel, so you can't read it", 1);
-
+                return $this->json(['error' => 'You haven\'t buy this novel, so you can\'t read it'], 403);
             }
         }
         

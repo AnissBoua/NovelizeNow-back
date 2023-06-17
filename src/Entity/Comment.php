@@ -44,7 +44,7 @@ class Comment
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'comments')]
     private ?self $comment = null;
 
-    #[ORM\OneToMany(mappedBy: 'comment', targetEntity: self::class)]
+    #[ORM\OneToMany(mappedBy: 'comment', targetEntity: self::class, cascade: ['remove'])]
     #[Groups(["novel:get", "novel:edit"])]
     private Collection $comments;
 
