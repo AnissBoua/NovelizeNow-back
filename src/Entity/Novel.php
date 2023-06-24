@@ -138,6 +138,7 @@ class Novel
     public function getAuthor()
     {
         $relatedUser = $this->userNovels;
+        $user = null;
         foreach($relatedUser as $userNovel){
             if($userNovel->getRelation() === "author"){
                 $user = $userNovel->getUser();
