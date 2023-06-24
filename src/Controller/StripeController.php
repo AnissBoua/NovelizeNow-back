@@ -32,6 +32,8 @@ class StripeController extends AbstractController
         $this->stripe_public_key = $_ENV['STRIPE_PUBLIC_KEY'];
         $this->stripe_private_key = $_ENV['STRIPE_PRIVATE_KEY'];   
         $this->stripe_hook_key = $_ENV['STRIPE_HOOK_KEY'];
+        $this->stripe_success_url = $_ENV['STRIPE_SUCCESS_URL'];
+        $this->stripe_cancel_url = $_ENV['STRIPE_CANCEL_URL'];
         $this->stripe = new StripeClient($this->stripe_private_key);
     }
 
@@ -107,8 +109,8 @@ class StripeController extends AbstractController
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'success_url' => 'http://localhost:5173/shop/coins',
-                'cancel_url' => 'http://localhost:5173/shop/coins',
+                'success_url' => $this->stripe_success_url,
+                'cancel_url' => $this->stripe_cancel_url,
             ]);
 
         } catch (\Exception $e) {

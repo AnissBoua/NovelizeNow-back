@@ -47,6 +47,7 @@ class ChapterRepository extends ServiceEntityRepository
             ->groupBy('n.id')
             ->orderBy('id', 'DESC')
             ->where('c.status = :status')
+            ->where('n.status = :status')
             ->setParameter('status', 'published')
             ->setMaxResults($limit)
             ->getQuery()
