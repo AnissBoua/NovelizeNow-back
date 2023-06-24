@@ -47,6 +47,8 @@ class NovelRepository extends ServiceEntityRepository
         ->join('n.comments', 'c')
         ->groupBy('n.id')
         ->orderBy('COUNT(l.id) + COUNT(c.id)', 'DESC')
+        ->where('n.status = :status')
+        ->setParameter('status', 'published')
         ->setMaxResults($value)
         ->getQuery()
         ->getResult();

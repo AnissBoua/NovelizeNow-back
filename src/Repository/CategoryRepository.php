@@ -48,6 +48,8 @@ class CategoryRepository extends ServiceEntityRepository
             ->join('c.novel', 'n')
             ->groupBy('c.id')
             ->orderBy('COUNT(n.id)', 'DESC')
+            ->where('n.status = :status')
+            ->setParameter('status', 'published')
             ->setMaxResults($value)
             ->getQuery()
             ->getResult();

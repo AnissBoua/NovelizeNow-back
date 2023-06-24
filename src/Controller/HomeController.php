@@ -64,7 +64,7 @@ class HomeController extends AbstractController
 
     private function getNewNovels()
     {
-        $newNovels = $this->em->getRepository(Novel::class)->findBy([], ['id' => 'DESC'], 8);
+        $newNovels = $this->em->getRepository(Novel::class)->findBy(['status' => 'published'], ['id' => 'DESC'], 8);
         return $newNovels;
     }
 }
