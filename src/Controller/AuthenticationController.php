@@ -54,7 +54,17 @@ class AuthenticationController extends AbstractController
 
         $user->setEmail($data->get('email'));
         $user->setCoins(0);
-        $user->setPassword($passwordHasher->hashPassword($user, $data->get('password')));
+        $regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.{8,})^";
+        if(preg_match($regex, $data->get('password'))) {
+            $user->setPassword($passwordHasher->hashPassword($user, $data->get('password')));
+        } else {
+            return new JsonResponse([
+                "status" => "error",
+                "message" => "Password must contain at least 8 characters, 1 uppercase and 1 lowercase"
+            ],
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
 
         if ($files->get('avatar')) {
             $avatar = $files->get('avatar');
