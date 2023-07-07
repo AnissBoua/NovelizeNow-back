@@ -41,17 +41,46 @@ class ChapterRepository extends ServiceEntityRepository
 
     public function findLastChapters($limit): array
     {
-        return $this->createQueryBuilder('c')
-            ->select('MAX(c.id) as id, MAX(c.title) as title, MAX(c.status) as status, n.id as novel_id')
+        /*
+        SELECT chapter.id,chapter.title, chapter.status, chapter.novel_id FROM `chapter`
+        JOIN novel ON novel.id = chapter.novel_id
+        JOIN (
+            SELECT MAX(chapter.id) as last_id, chapter.novel_id as last_novel_id
+            FROM chapter
+            WHERE status = 'published'
+            GROUP BY last_novel_id
+        ) AS last_chapters ON last_chapters.last_id = chapter.id
+        WHERE chapter.status = 'published'
+        AND novel.status = 'published'
+        ORDER BY chapter.id DESC;
+        */
+        $lastChapters = $this->createQueryBuilder('c')
+            ->select('MAX(c.id) AS last_chapter_id, n.id AS novel_id')
             ->join('c.novel', 'n')
-            ->groupBy('n.id')
-            ->orderBy('id', 'DESC')
-            ->where('c.status = :status')
-            ->where('n.status = :status')
+            ->andWhere('c.status = :status')
+            ->andWhere('n.status = :status')
             ->setParameter('status', 'published')
+            ->groupBy('novel_id')
+            ->orderBy('last_chapter_id', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+
+        $chapters = [];
+        foreach ($lastChapters as $key => $chapter) {
+            $chapterData = $this->createQueryBuilder('c')
+                ->select('c.id, c.title, c.status, n.id as novel_id')
+                ->join('c.novel', 'n')
+                ->andWhere('c.id = :id')
+                ->andWhere('c.status = :status')
+                ->andWhere('n.status = :status')
+                ->setParameter('id', $chapter['last_chapter_id'])
+                ->setParameter('status', 'published')
+                ->getQuery()
+                ->getOneOrNullResult();
+            array_push($chapters, $chapterData);
+        }
+        return $chapters;
     }
 
 //    /**
