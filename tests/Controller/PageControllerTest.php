@@ -22,7 +22,7 @@ class PageControllerTest extends WebTestCase
         $this->client = static::createClient();
         $this->databaseTool = static::getContainer()->get(DatabaseToolCollection::class)->get();
         $this->databaseTool->loadAliceFixture([
-            __DIR__. './novels.yaml',
+            __DIR__. './fixtures/novels.yaml',
         ]);
     }
 

@@ -25,7 +25,7 @@ class AuthControllerTest extends WebTestCase {
             'name' => 'test',
             'lastname' => 'test',
             'email' => 'test@hotmail.com',
-            'password' => 'password',
+            'password' => 'Testtest',
         ], [], [
             'CONTENT_TYPE' => 'multipart/form-data',
         ]);
@@ -40,7 +40,7 @@ class AuthControllerTest extends WebTestCase {
             'lastname' => 'test',
             'username' => 'test',
             'email' => 'test@hotmail.com',
-            'password' => 'password',
+            'password' => 'Testtest',
         ], [
             'avatar' => $avatar,
         ], [
