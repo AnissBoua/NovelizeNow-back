@@ -23,6 +23,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\SecurityBundle\Security as SecurityAuth;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
@@ -50,7 +51,7 @@ class NovelController extends AbstractController
     }
 
     #[Route('/', name: 'new_novel', methods: ['POST']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
-    public function post(Request $request, SerializerInterface $serializerInterface)
+    public function post(Request $request, SerializerInterface $serializerInterface,ValidatorInterface $validator)
     {
         // $data = json_decode($request->getContent(), true);
         $data = $request->request;
@@ -76,6 +77,10 @@ class NovelController extends AbstractController
         $novel->setPrice($data->get('price'));
         $novel->setStatus($data->get('status'));
         $novel->setDateCreation(new DateTime());
+        $errors = $validator->validate($novel);
+        if (count($errors) > 0) {
+            return $this->json(['error' => $errors], 400);
+        }
         $this->em->persist($novel); 
 
         // Relations
