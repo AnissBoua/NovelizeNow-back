@@ -44,6 +44,15 @@ class AuthenticationController extends AbstractController
                 JsonResponse::HTTP_BAD_REQUEST
             );
         }
+        
+        if($this->em->getRepository(User::class)->findOneBy(['email' => $data->get('email')])) {
+            return new JsonResponse([
+                "status" => "error",
+                "message" => "Email already used"
+            ],
+                JsonResponse::HTTP_CONFLICT
+            );
+        }
 
         $user = new User();
         
