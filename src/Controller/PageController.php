@@ -13,6 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\SecurityBundle\Security as SecurityAuth;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
@@ -30,7 +31,7 @@ class PageController extends AbstractController
     }
 
     #[Route('/page', methods: ['POST']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
-    public function createPage(Request $request, SerializerInterface $serializer){
+    public function createPage(Request $request, SerializerInterface $serializer, HtmlSanitizerInterface $htmlSanitizer){
         $data = json_decode($request->getContent(),true);
         $page = new Page();
         $chapter = $this->chapterRepo->find($data["chapter"]);
@@ -41,7 +42,7 @@ class PageController extends AbstractController
             return $this->json(['error' => 'Vous n\'êtes pas l\'autheur de ce roman, vous ne pouvez pas créer une page : '. $novel->getId()], 404);
         }
         $page->setContent($data["content"]);
-        $page->setHtml($data["html"]);
+        $page->setHtml($htmlSanitizer->sanitize($data["html"]));
         $page->setChapter($chapter);
         $this->em->persist($page);
         $this->em->flush();
