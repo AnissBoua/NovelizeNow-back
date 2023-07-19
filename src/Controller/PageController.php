@@ -68,7 +68,7 @@ class PageController extends AbstractController
     }
 
     #[Route('/page/{id}', methods: ['PUT']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
-    public function updatePage(int $id, Request $request, SerializerInterface $serializer){
+    public function updatePage(int $id, Request $request, SerializerInterface $serializer, HtmlSanitizerInterface $htmlSanitizer){
         $data = json_decode($request->getContent(),true);
         $page = $this->pageRepo->find($id);
         if (!$page) {
@@ -83,7 +83,7 @@ class PageController extends AbstractController
         }
 
         $page->setContent($data["content"]);
-        $page->setHtml($data["html"]);
+        $page->setHtml($htmlSanitizer->sanitize($data["html"]));
         $chapter = $this->chapterRepo->find($data["chapter"]);
         $page->setChapter($chapter);
         $this->em->persist($page);
