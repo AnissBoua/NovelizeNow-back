@@ -12,6 +12,8 @@ security:
         jwt:
             lexik_jwt: 
                 class: App\Entity\User
+        jwt_user_provider:
+            id: App\Auth\JWTUserProvider
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
@@ -27,7 +29,7 @@ security:
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
         api:
             pattern:   ^/api
-            provider: jwt
+            provider: jwt_user_provider
             stateless: true
             entry_point: jwt
             jwt: ~

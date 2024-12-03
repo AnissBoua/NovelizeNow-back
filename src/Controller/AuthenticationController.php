@@ -17,6 +17,10 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security as SecurityMiddlew
 
 class AuthenticationController extends AbstractController
 {
+    private $serializer;
+    private $em;
+    private $fileUploadService;
+
     public function __construct(
         EntityManagerInterface $em, 
         SerializerInterface $serializer,
@@ -101,20 +105,10 @@ class AuthenticationController extends AbstractController
     public function me()
     {
         $user = $this->security->getUser();
-        $userArray = $this->serializer->normalize($user, null);
-
-        unset($userArray['userIdentifier']);
-
-        // Hide all key that have a null value, keys need to be set in user entity createFromPayload
-        $userFiltered = array_filter($userArray, function ($key)
-        {
-            if ($key === null) return;
-
-            return $key;
-        });
+        $user = $this->serializer->normalize($user, null, ['groups' => ['user:me']]);
 
         return new JsonResponse(
-            $userFiltered,
+            $user,
             JsonResponse::HTTP_OK
         );
     }

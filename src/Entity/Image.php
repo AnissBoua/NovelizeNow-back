@@ -15,10 +15,11 @@ class Image
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["user:me", "novel:get", "novel:edit", "user-novel:get", "comment:post", "home:get", "home:categories"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit", "user-novel:get", "comment:post", "home:get", "home:categories"])]
+    #[Groups(["user:me", "novel:get", "novel:edit", "user-novel:get", "comment:post", "home:get", "home:categories"])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 255,
@@ -28,7 +29,7 @@ class Image
     private ?string $filename = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "novel:edit", "user-novel:get", "comment:post", "home:get", "home:categories"])]
+    #[Groups(["user:me", "novel:get", "novel:edit", "user-novel:get", "comment:post", "home:get", "home:categories"])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 255,

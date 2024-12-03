@@ -20,7 +20,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["novel:get", "user-novel:get", "like:get", 'comment:post', "home:get", "home:categories"])]
+    #[Groups(["user:me", "novel:get", "user-novel:get", "like:get", 'comment:post', "home:get", "home:categories"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
@@ -28,9 +28,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[Assert\Email(
         message: 'The email {{ value }} is not a valid email.',
     )]
+    #[Groups(["user:me"])]
     private ?string $email = null;
 
     #[ORM\Column]
+    #[Groups(["user:me"])]
     private array $roles = [];
 
     /**
@@ -41,7 +43,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
+    #[Groups(["user:me", "novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 255,
@@ -51,7 +53,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
+    #[Groups(["user:me", "novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 255,
@@ -62,10 +64,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
 
     #[ORM\Column]
     #[Assert\PositiveOrZero]
+    #[Groups(["user:me"])]
     private ?int $coins = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
+    #[Groups(["user:me", "novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 255,
@@ -90,7 +93,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     private Collection $comments;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
-    #[Groups(["novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
+    #[Groups(["user:me", "novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     #[Assert\NotBlank]
     private ?Image $avatar = null;
 
@@ -106,15 +109,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
 
     public static function createFromPayload($id, array $payload): JWTUserInterface
     {
-        // payload come from src\EventSubscriber\JWTSubscriber.php
-        $user = new User();
-        $user->setId($id);
-        $user->setRoles($payload["roles"]);
-        $user->setEmail($payload["email"]);
-        $user->setName($payload["name"]);
-        $user->setLastname($payload["lastname"]);
-        $user->setUsername($payload["username"]);
-        return $user;
+        throw new \LogicException('Use the JWTUserFactory to create users from payloads.');
     }
 
     #[Groups(["novel:get", "home:get", "home:categories"])]
