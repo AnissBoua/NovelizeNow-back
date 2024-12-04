@@ -108,8 +108,8 @@ class StripeController extends AbstractController
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'success_url' => $this->front_url + '/shop/success',
-                'cancel_url' => $this->front_url + '/shop/cancel',
+                'success_url' => $this->front_url . '/shop/success',
+                'cancel_url' => $this->front_url . '/shop/cancel',
             ]);
 
         } catch (\Exception $e) {
