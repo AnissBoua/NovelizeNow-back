@@ -66,6 +66,7 @@ class CategoryRepository extends ServiceEntityRepository
                 $categorie->removeNovel($last);
             }
 
+            $categorie->setNovel(array_values($categorie->getNovel()->toArray()));
             $categories[$key] = $categorie;
         }
         return $categories;

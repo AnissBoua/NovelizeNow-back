@@ -71,6 +71,12 @@ class Category
         return $this->novel;
     }
 
+    public function setNovel(array $novel): self {
+        $this->novel = new ArrayCollection($novel);
+
+        return $this;
+    }
+
     public function addNovel(Novel $novel): self
     {
         if (!$this->novel->contains($novel)) {
