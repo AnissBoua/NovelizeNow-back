@@ -55,14 +55,18 @@ class CategoryRepository extends ServiceEntityRepository
             ->getResult();
 
         foreach ($categories as $key => $categorie) {
+            foreach ($categorie->getNovel()->toArray() as $novel) {
+                if ($novel->getStatus() !== 'published') {
+                    $categorie->removeNovel($novel);
+                }
+            }
+
             while (count($categorie->getNovel()->toArray()) > 4) {
                 $last = $categorie->getNovel()->last();
                 $categorie->removeNovel($last);
             }
 
-            // $categorie->setNovel() = array_slice($categorie->getNovel()->toArray(), 1, 4);
             $categories[$key] = $categorie;
-
         }
         return $categories;
    }
