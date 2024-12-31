@@ -58,7 +58,9 @@ class NovelRepository extends ServiceEntityRepository
    {
         return $this->createQueryBuilder('n')
         ->where('n.title LIKE :val')
+        ->andWhere('n.status = :status')
         ->setParameter('val', '%'.$value.'%')
+        ->setParameter('status', 'published')
         ->setMaxResults(5)
         ->getQuery()
         ->getResult();
