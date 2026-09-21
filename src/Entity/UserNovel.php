@@ -23,6 +23,7 @@ class UserNovel
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'userNovels')]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
     #[Groups(["user-novel:get"])]
     private ?Novel $novel = null;
 

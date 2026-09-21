@@ -5,8 +5,6 @@ namespace App\Entity;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\ChapterRepository;
-use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Annotation\Groups;
 
@@ -16,11 +14,11 @@ class Chapter
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit", 'home:get'])]
+    #[Groups(["chapter:read", "novel:get", "novel:edit", 'home:get'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["page:read", "chapter:read", "novel:get", "novel:edit", 'home:get'])]
+    #[Groups(["chapter:read", "novel:get", "novel:edit", 'home:get'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 255,
@@ -35,22 +33,18 @@ class Chapter
     private ?string $status = null;
 
     #[ORM\ManyToOne(inversedBy: 'chapters')]
-    #[Groups(["chapter:read", "page:read", 'home:get'])]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
+    #[Groups(["chapter:read", 'home:get'])]
     #[Assert\NotBlank]
     private ?Novel $novel = null;
 
-    #[ORM\OneToMany(mappedBy: 'chapter', targetEntity: Page::class, cascade: ['remove'])]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(["chapter:read"])]
-    private Collection $pages;
+    private ?string $content = null;
 
-    #[ORM\Column(type: Types::ARRAY, nullable: true)]
-    #[Groups(["chapter:read", "page:read", "novel:get"])]
-    private array $pageState = [];
-
-    public function __construct()
-    {
-        $this->pages = new ArrayCollection();
-    }
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(["chapter:read"])]
+    private ?string $html = null;
 
     public function getId(): ?int
     {
@@ -93,47 +87,27 @@ class Chapter
         return $this;
     }
 
-    /**
-     * @return Collection<int, Page>
-     */
-    public function getPages(): Collection
+    public function getContent(): ?string
     {
-        return $this->pages;
+        return $this->content;
     }
 
-    public function addPage(Page $page): self
+    public function setContent(?string $content): self
     {
-        if (!$this->pages->contains($page)) {
-            $this->pages->add($page);
-            $page->setChapter($this);
-        }
+        $this->content = $content;
 
         return $this;
     }
 
-    public function removePage(Page $page): self
+    public function getHtml(): ?string
     {
-        if ($this->pages->removeElement($page)) {
-            // set the owning side to null (unless already changed)
-            if ($page->getChapter() === $this) {
-                $page->setChapter(null);
-            }
-        }
-
-        return $this;
+        return $this->html;
     }
 
-    public function getPageState(): array
+    public function setHtml(?string $html): self
     {
-        return $this->pageState;
-    }
+        $this->html = $html;
 
-    /**
-     * @param int[] $integerArray
-     */
-    public function setPageState(?array $pageState): self
-    {
-        $this->pageState = $pageState ? array_values($pageState) : [];
         return $this;
     }
 }

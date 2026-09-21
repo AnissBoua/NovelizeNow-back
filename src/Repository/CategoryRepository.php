@@ -54,6 +54,7 @@ class CategoryRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
+        $result = [];
         foreach ($categories as $key => $categorie) {
             foreach ($categorie->getNovel()->toArray() as $novel) {
                 if ($novel->getStatus() !== 'published') {
@@ -61,15 +62,17 @@ class CategoryRepository extends ServiceEntityRepository
                 }
             }
 
+            $novelCount = count($categorie->getNovel()->toArray());
+
             while (count($categorie->getNovel()->toArray()) > 4) {
                 $last = $categorie->getNovel()->last();
                 $categorie->removeNovel($last);
             }
 
             $categorie->setNovel(array_values($categorie->getNovel()->toArray()));
-            $categories[$key] = $categorie;
+            $result[] = ['category' => $categorie, 'novelCount' => $novelCount];
         }
-        return $categories;
+        return $result;
    }
 
 //    public function findOneBySomeField($value): ?Category

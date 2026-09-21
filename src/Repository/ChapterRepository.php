@@ -39,7 +39,7 @@ class ChapterRepository extends ServiceEntityRepository
         }
     }
 
-    public function findLastChapters($limit): array
+    public function findLastChapters($limit, $offset = 0): array
     {
         /*
         SELECT chapter.id,chapter.title, chapter.status, chapter.novel_id FROM `chapter`
@@ -62,6 +62,7 @@ class ChapterRepository extends ServiceEntityRepository
             ->setParameter('status', 'published')
             ->groupBy('novel_id')
             ->orderBy('last_chapter_id', 'DESC')
+            ->setFirstResult($offset)
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();

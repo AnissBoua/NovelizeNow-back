@@ -20,7 +20,7 @@ class Offer
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['offer:get'])]
+    #[Groups(['offer:get', 'transaction:get'])]
     #[Assert\NotBlank(message: "The name is required")]
     #[Assert\Length(
         min: 1,

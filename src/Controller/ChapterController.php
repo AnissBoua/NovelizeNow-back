@@ -5,7 +5,6 @@ namespace App\Controller;
 use Exception;
 use App\Entity\Order;
 use App\Entity\Chapter;
-use App\Repository\PageRepository;
 use App\Repository\NovelRepository;
 use App\Repository\ChapterRepository;
 use App\Services\NovelRelationService;
@@ -24,13 +23,11 @@ class ChapterController extends AbstractController
     private $em;
     private $chapterRepo;
     private $novelRepo;
-    private $pageRepo;
 
-    public function __construct(EntityManagerInterface $em, ChapterRepository $chapterRepo , NovelRepository $novelRepo, PageRepository $pageRepo, NovelRelationService $novelRelationService, private SecurityAuth $security){
+    public function __construct(EntityManagerInterface $em, ChapterRepository $chapterRepo , NovelRepository $novelRepo, NovelRelationService $novelRelationService, private SecurityAuth $security){
         $this->em = $em;
         $this->chapterRepo = $chapterRepo;
         $this->novelRepo = $novelRepo;
-        $this->pageRepo = $pageRepo;
         $this->novelRelationService = $novelRelationService;
     }
 
@@ -43,13 +40,15 @@ class ChapterController extends AbstractController
             return $this->json(['error' => 'Not found novel, id: '. $data["novel"]], 404);
         }
         $user = $this->security->getUser();
-        
+
         if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
             return $this->json(['error' => 'Vous n\'êtes pas l\'autheur de ce roman, vous ne pouvez pas créer un chapitre : '. $novel->getId()], 403);
         }
         $chapter->setTitle($data["title"]);
         $chapter->setStatus($data["status"]);
         $chapter->setNovel($novel);
+        $chapter->setContent($data["content"] ?? null);
+        $chapter->setHtml($data["html"] ?? null);
         $this->em->persist($chapter);
         $this->em->flush();
         $json = $serializer->serialize($chapter, 'json', ['groups' => 'chapter:read']);
@@ -76,31 +75,20 @@ class ChapterController extends AbstractController
 
         $novel = $chapter->getNovel();
         $user = $this->security->getUser();
-        
+
         if (!$this->novelRelationService->isUserAuthorized($novel, $user)) {
             return $this->json(['error' => 'Vous n\'êtes pas l\'autheur de ce roman, vous ne pouvez pas modifier un chapitre : '. $novel->getId()], 403);
         }
 
         $chapter->setTitle($data["title"]);
         $chapter->setStatus($data["status"]);
-        $chapter->setPageState($data["pageState"]);
+        $chapter->setContent($data["content"] ?? null);
+        $chapter->setHtml($data["html"] ?? null);
         $this->em->persist($chapter);
         $this->em->flush();
         $json = $serializer->serialize($chapter, 'json', ['groups' => 'chapter:read']);
         return new JsonResponse($json, 200, [], true);
     }
-
-    // private function addPageToChapter(int $id){
-       
-    //     $chapter = $this->chapterRepo->find($id);
-        
-    //     $pageState = $chapter->getPageState();
-    //     $chapter->setPageState($data["newPageId"]);
-    //     $this->em->persist($chapter);
-    //     $this->em->flush();
-    //     $json = $serializer->serialize($chapter, 'json', ['groups' => 'chapter:read']);
-    //     return new JsonResponse($json, 202, [], true);
-    // }
 
     #[Route('/chapter/{id}', methods: ['DELETE']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
     public function deleteChapter(int $id ){
@@ -121,7 +109,7 @@ class ChapterController extends AbstractController
         return new Response("no content", 204);
     }
 
-    #[Route('/chapter_pages/{id}', methods: ['GET']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
+    #[Route('/chapter_pages/{id}', methods: ['GET'])]
     public function getChapterPages(int $id ){
         $chapter = $this->chapterRepo->find($id);
         if (!$chapter) {
@@ -138,34 +126,28 @@ class ChapterController extends AbstractController
 
         if ($firstChapter === false) {
             $user = $this->security->getUser();
-            $order = $this->em->getRepository(Order::class)
-                        ->findOneBy([
-                            "user" => $user, 
-                            "novel" => $novel
-                        ]);
-            if (!$order) {
-                return $this->json(['error' => 'You haven\'t buy this novel, so you can\'t read it'], 403);
+            $isAuthor = $this->novelRelationService->isUserAuthorized($novel, $user);
+            if (!$isAuthor) {
+                $order = $this->em->getRepository(Order::class)
+                            ->findOneBy([
+                                "user" => $user,
+                                "novel" => $novel
+                            ]);
+                if (!$order) {
+                    return $this->json(['error' => 'You haven\'t buy this novel, so you can\'t read it'], 403);
+                }
             }
         }
-        
-        $pageState = $chapter->getPageState();
-        $pages = [];
-        foreach ($pageState as $pageId) {
-            $page= $this->pageRepo->find($pageId);
-            array_push($pages,$page->toArray());
-        }
-
-        
 
         $arrayResponse = [
             "novelTitle" => $chapter->getNovel()->getTitle(),
             "chapterTitle" => $chapter->getTitle(),
-            "pageState" => $pageState, 
-            "pages" => $pages,
+            "content" => $chapter->getContent(),
+            "html" => $chapter->getHtml(),
             "firstChapter" => $firstChapter
         ];
-        
+
         return new JsonResponse(json_encode($arrayResponse),200, [], true);
     }
-    
+
 }

@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\TransactionRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: TransactionRepository::class)]
 class Transaction
@@ -12,15 +13,19 @@ class Transaction
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['transaction:get'])]
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Groups(['transaction:get'])]
     private ?float $total = null;
 
     #[ORM\Column]
+    #[Groups(['transaction:get'])]
     private ?int $coins = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['transaction:get'])]
     private ?\DateTimeInterface $dateTransaction = null;
 
     #[ORM\ManyToOne(inversedBy: 'transactions')]
@@ -28,12 +33,14 @@ class Transaction
 
     #[ORM\ManyToOne(inversedBy: 'transactions')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['transaction:get'])]
     private ?Offer $offer = null;
 
     #[ORM\Column(length: 255)]
     private ?string $payment_id = null;
 
     #[ORM\Column(type: 'string', columnDefinition: 'ENUM("pending", "completed", "canceled")')]
+    #[Groups(['transaction:get'])]
     private ?string $status = null;
 
     #[ORM\Column(length: 255, nullable: true)]

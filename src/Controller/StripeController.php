@@ -108,8 +108,8 @@ class StripeController extends AbstractController
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'success_url' => $this->front_url . '/shop/success',
-                'cancel_url' => $this->front_url . '/shop/cancel',
+                'success_url' => $this->front_url . '/shop/success?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => $this->front_url . '/shop/cancel?session_id={CHECKOUT_SESSION_ID}',
             ]);
 
         } catch (\Exception $e) {
@@ -141,6 +141,33 @@ class StripeController extends AbstractController
         }
 
         throw new Exception('Une erreur est survenue lors de la création du paiement.', 500);
+    }
+
+    #[Route('/session/{sessionId}', name: 'get_checkout_session', methods: ['GET']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function getCheckoutSession(string $sessionId)
+    {
+        /** @var User $user */
+        $user = $this->security->getUser();
+
+        $transaction = $this->em->getRepository(Transaction::class)->findOneBy([
+            'payment_id' => $sessionId,
+        ]);
+
+        if (!$transaction || $transaction->getUser()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Commande introuvable.'], 404);
+        }
+
+        $currentUser = $this->em->getRepository(User::class)->find($user->getId());
+
+        return $this->json([
+            'id' => $transaction->getId(),
+            'status' => $transaction->getStatus(),
+            'offerName' => $transaction->getOffer()->getName(),
+            'coins' => $transaction->getCoins(),
+            'total' => $transaction->getTotal(),
+            'dateTransaction' => $transaction->getDateTransaction()->format('Y-m-d H:i:s'),
+            'balance' => $currentUser->getCoins(),
+        ]);
     }
 
     #[Route('/checkout-completed-webhook', name: 'stripe_checkout_webhook')]

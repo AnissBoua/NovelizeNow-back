@@ -29,7 +29,7 @@ class Like
     private ?User $user = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Groups(["like:get"])]
     #[Assert\NotBlank]
     private ?Novel $novel = null;

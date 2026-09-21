@@ -37,11 +37,12 @@ class Comment
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotBlank(message: "The novel is required")]
     private ?Novel $novel = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'comments')]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?self $comment = null;
 
     #[ORM\OneToMany(mappedBy: 'comment', targetEntity: self::class, cascade: ['remove'])]

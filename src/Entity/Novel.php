@@ -96,7 +96,7 @@ class Novel
     #[Assert\NotBlank(message: "The price is required")]
     #[Assert\Positive(message: "The price must be positive")]
     #[Assert\Type(type: 'numeric', message: "The price must be a number")]
-    #[Groups(["novel:get", "novel:edit"])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?int $price = null;
 
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Comment::class), OrderBy(['id' => 'DESC'])]
@@ -433,16 +433,22 @@ class Novel
         return $this;
     }
 
-    #[Groups(["user-novel:get", "home:get", "home:categories"])]
+    #[Groups(["user-novel:get", "home:get", "home:categories", "novel:get"])]
     public function getLikesCount(): int
     {
         return count($this->likes);
     }
 
-    #[Groups(["user-novel:get", "home:get", "home:categories"])]
+    #[Groups(["user-novel:get", "home:get", "home:categories", "novel:get"])]
     public function getCommentsCount(): int
     {
         return count($this->comments);
+    }
+
+    #[Groups(["novel:get"])]
+    public function getOrdersCount(): int
+    {
+        return count($this->orders);
     }
 
 }

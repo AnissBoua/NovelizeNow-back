@@ -8,6 +8,7 @@
 /public/stripe_sessio.log
 /var/
 /vendor/
+.history/*
 ###< symfony/framework-bundle ###
 
 ###> phpunit/phpunit ###

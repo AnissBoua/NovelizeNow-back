@@ -409,4 +409,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
 
         return $this;
     }
+
+    #[Groups(["user:me"])]
+    public function getOrdersCount(): int
+    {
+        return count($this->orders);
+    }
+
+    #[Groups(["user:me"])]
+    public function getCommentsCount(): int
+    {
+        return count($this->comments);
+    }
+
+    #[Groups(["user:me"])]
+    public function getAuthorsSupportedCount(): int
+    {
+        $authorIds = [];
+        foreach ($this->orders as $order) {
+            $author = $order->getNovel()->getAuthor();
+            if ($author) {
+                $authorIds[$author->getId()] = true;
+            }
+        }
+        return count($authorIds);
+    }
 }

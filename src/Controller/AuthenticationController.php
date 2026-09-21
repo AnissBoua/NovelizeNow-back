@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\Like;
+use App\Entity\Order;
 use App\Entity\User;
 use App\Services\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -111,6 +113,93 @@ class AuthenticationController extends AbstractController
             $user,
             JsonResponse::HTTP_OK
         );
+    }
+
+    #[Route("/me", name:"api_update_me", methods:["POST"]), SecurityMiddleware("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function updateMe(Request $request)
+    {
+        /** @var User $authUser */
+        $authUser = $this->security->getUser();
+        $user = $this->em->getRepository(User::class)->find($authUser->getId());
+
+        $data = $request->request;
+        $files = $request->files;
+
+        if ($data->get('name')) {
+            $user->setName($data->get('name'));
+        }
+        if ($data->get('lastname')) {
+            $user->setLastname($data->get('lastname'));
+        }
+        if ($data->get('username')) {
+            $existing = $this->em->getRepository(User::class)->findOneBy(['username' => $data->get('username')]);
+            if ($existing && $existing->getId() !== $user->getId()) {
+                return new JsonResponse(['message' => "Cet identifiant est déjà pris."], JsonResponse::HTTP_CONFLICT);
+            }
+            $user->setUsername($data->get('username'));
+        }
+
+        if ($files->get('avatar')) {
+            $avatar = $files->get('avatar');
+            $destination = '/uploads/avatars';
+            $image = $this->fileUploadService->imageUpload($avatar, $destination);
+            $user->setAvatar($image);
+        }
+
+        $this->em->persist($user);
+        $this->em->flush();
+
+        $user = $this->serializer->normalize($user, null, ['groups' => ['user:me']]);
+
+        return new JsonResponse($user, JsonResponse::HTTP_OK);
+    }
+
+    #[Route("/me", name:"api_delete_me", methods:["DELETE"]), SecurityMiddleware("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function deleteMe()
+    {
+        /** @var User $authUser */
+        $authUser = $this->security->getUser();
+        $user = $this->em->getRepository(User::class)->find($authUser->getId());
+
+        $authoredNovels = [];
+        foreach ($user->getUserNovels() as $userNovel) {
+            if ($userNovel->getRelation() === 'author') {
+                $authoredNovels[] = $userNovel->getNovel();
+            } else {
+                $this->em->remove($userNovel);
+            }
+        }
+
+        foreach ($authoredNovels as $novel) {
+            foreach ($novel->getComments() as $comment) {
+                $this->em->remove($comment);
+            }
+            foreach ($this->em->getRepository(Like::class)->findBy(['novel' => $novel]) as $like) {
+                $this->em->remove($like);
+            }
+            foreach ($novel->getOrders() as $order) {
+                $this->em->remove($order);
+            }
+        }
+
+        foreach ($user->getComments() as $comment) {
+            $this->em->remove($comment);
+        }
+        foreach ($user->getTransactions() as $transaction) {
+            $this->em->remove($transaction);
+        }
+        foreach ($user->getOrders() as $order) {
+            $this->em->remove($order);
+        }
+
+        foreach ($authoredNovels as $novel) {
+            $this->em->remove($novel);
+        }
+
+        $this->em->remove($user);
+        $this->em->flush();
+
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
 
     // Hidden Route /token/refresh To refresh token required refresh_token in body

@@ -23,6 +23,7 @@ class NovelImage
     private ?Image $image = null;
 
     #[ORM\ManyToOne(inversedBy: 'novelImages')]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?Novel $novel = null;
 
     public function getId(): ?int
