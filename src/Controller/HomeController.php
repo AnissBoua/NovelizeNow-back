@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Category;
 use App\Entity\Novel;
 use App\Entity\Order;
+use App\Entity\Follow;
 use PHPUnit\Util\Json;
 use App\Entity\Chapter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,11 +38,25 @@ class HomeController extends AbstractController
         $data['carousel'] = $this->getCarousel();
         $data['chapters'] = $this->getLastChapters(self::CHAPTERS_PAGE_SIZE, 0);
         $data['newNovels'] = $this->getNewNovels();
-        $data['freeChaptersCount'] = $this->em->getRepository(Novel::class)->count(['status' => 'published']);
+        $data['publishedNovelsCount'] = (int) $this->em->getRepository(Novel::class)->createQueryBuilder('n')
+            ->select('COUNT(n.id)')
+            ->where('n.publishedAt IS NOT NULL')
+            ->getQuery()
+            ->getSingleScalarResult();
+        // Each published novel gives away its first published chapter, so a novel with none yet has no free chapter.
+        $data['freeChaptersCount'] = (int) $this->em->getRepository(Novel::class)->createQueryBuilder('n')
+            ->select('COUNT(DISTINCT n.id)')
+            ->join('n.chapters', 'c')
+            ->where('n.publishedAt IS NOT NULL')
+            ->andWhere("c.status = 'published'")
+            ->getQuery()
+            ->getSingleScalarResult();
         $data['totalCategoriesCount'] = $this->em->getRepository(Category::class)->count([]);
         $data = json_decode($this->serializer->serialize($data, 'json', ['groups' => 'home:get']), true);
 
-        $data['categories'] = $this->getBestCategoriesNovels();
+        $data['chapters'] = $this->attachFollowStateToChapters($data['chapters']);
+        $data['newNovels'] = $this->attachFollowStateToNovels($data['newNovels']);
+        $data['categories'] = $this->getTopCategories();
 
         $data = json_encode($data);
         return new JsonResponse($data, Response::HTTP_OK, [], true);
@@ -58,8 +73,68 @@ class HomeController extends AbstractController
             'hasMore' => count($chapters) === self::CHAPTERS_PAGE_SIZE,
         ];
         $data = json_decode($this->serializer->serialize($data, 'json', ['groups' => 'home:get']), true);
+        $data['chapters'] = $this->attachFollowStateToChapters($data['chapters']);
 
         return new JsonResponse(json_encode($data), Response::HTTP_OK, [], true);
+    }
+
+    private function attachFollowStateToChapters(array $chapters): array
+    {
+        $authorIds = [];
+        foreach ($chapters as $chapter) {
+            if (isset($chapter['novel']['author']['id'])) {
+                $authorIds[$chapter['novel']['author']['id']] = true;
+            }
+        }
+
+        $followedIds = $this->getFollowedAuthorIds(array_keys($authorIds));
+
+        foreach ($chapters as &$chapter) {
+            if (isset($chapter['novel']['author']['id'])) {
+                $chapter['novel']['author']['isFollowing'] = in_array($chapter['novel']['author']['id'], $followedIds, true);
+            }
+        }
+
+        return $chapters;
+    }
+
+    private function attachFollowStateToNovels(array $novels): array
+    {
+        $authorIds = [];
+        foreach ($novels as $novel) {
+            if (isset($novel['author']['id'])) {
+                $authorIds[$novel['author']['id']] = true;
+            }
+        }
+
+        $followedIds = $this->getFollowedAuthorIds(array_keys($authorIds));
+
+        foreach ($novels as &$novel) {
+            if (isset($novel['author']['id'])) {
+                $novel['author']['isFollowing'] = in_array($novel['author']['id'], $followedIds, true);
+            }
+        }
+
+        return $novels;
+    }
+
+    private function getFollowedAuthorIds(array $authorIds): array
+    {
+        $user = $this->securityAuth->getUser();
+        if (!$user || !$authorIds) {
+            return [];
+        }
+
+        $rows = $this->em->getRepository(Follow::class)->createQueryBuilder('f')
+            ->select('IDENTITY(f.author) as author_id')
+            ->andWhere('f.follower = :user')
+            ->andWhere('f.author IN (:authorIds)')
+            ->setParameter('user', $user)
+            ->setParameter('authorIds', $authorIds)
+            ->getQuery()
+            ->getScalarResult();
+
+        return array_map('intval', array_column($rows, 'author_id'));
     }
 
     private function getCarousel()
@@ -108,23 +183,26 @@ class HomeController extends AbstractController
         return $lastChapters;
     }
 
-    private function getBestCategoriesNovels()
+    private function getTopCategories(): array
     {
-        $bestCategoriesNovels = $this->em->getRepository(Category::class)->findBestCategoriesNovels(5);
+        $categories = array_values(array_filter(
+            $this->em->getRepository(Category::class)->findAllWithPublishedStats(),
+            fn($category) => $category['novelCount'] > 0
+        ));
+        usort($categories, fn($a, $b) => [$b['novelCount'], $b['likesCount']] <=> [$a['novelCount'], $a['likesCount']]);
 
-        return array_map(function ($entry) {
-            $category = json_decode(
-                $this->serializer->serialize($entry['category'], 'json', ['groups' => ['home:categories']]),
-                true
-            );
-            $category['novelCount'] = $entry['novelCount'];
-            return $category;
-        }, $bestCategoriesNovels);
+        return array_slice($categories, 0, 5);
     }
 
     private function getNewNovels()
     {
-        $newNovels = $this->em->getRepository(Novel::class)->findBy(['status' => 'published'], ['id' => 'DESC'], 8);
+        $newNovels = $this->em->getRepository(Novel::class)->createQueryBuilder('n')
+            ->where('n.publishedAt IS NOT NULL')
+            ->orderBy('n.publishedAt', 'DESC')
+            ->addOrderBy('n.id', 'DESC')
+            ->setMaxResults(8)
+            ->getQuery()
+            ->getResult();
         return $newNovels;
     }
 }

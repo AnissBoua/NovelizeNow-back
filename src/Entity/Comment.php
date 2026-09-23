@@ -45,13 +45,26 @@ class Comment
     #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?self $comment = null;
 
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    #[Groups(['comment:post'])]
+    private ?Chapter $chapter = null;
+
     #[ORM\OneToMany(mappedBy: 'comment', targetEntity: self::class, cascade: ['remove'])]
     #[Groups(["novel:get", "novel:edit"])]
     private Collection $comments;
 
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['comment:post', "novel:get"])]
+    private ?\DateTimeInterface $dateCreation = null;
+
+    #[ORM\OneToMany(mappedBy: 'comment', targetEntity: CommentLike::class, cascade: ['remove'])]
+    private Collection $commentLikes;
+
     public function __construct()
     {
         $this->comments = new ArrayCollection();
+        $this->commentLikes = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -100,6 +113,18 @@ class Comment
         return $this->comment;
     }
 
+    public function getChapter(): ?Chapter
+    {
+        return $this->chapter;
+    }
+
+    public function setChapter(?Chapter $chapter): self
+    {
+        $this->chapter = $chapter;
+
+        return $this;
+    }
+
     public function setComment(?self $comment): self
     {
         $this->comment = $comment;
@@ -135,5 +160,23 @@ class Comment
         }
 
         return $this;
+    }
+
+    public function getDateCreation(): ?string
+    {
+        return $this->dateCreation ? $this->dateCreation->format('Y-m-d H:i:s') : null;
+    }
+
+    public function setDateCreation(\DateTimeInterface $dateCreation): self
+    {
+        $this->dateCreation = $dateCreation;
+
+        return $this;
+    }
+
+    #[Groups(['comment:post', "novel:get"])]
+    public function getLikesCount(): int
+    {
+        return count($this->commentLikes);
     }
 }

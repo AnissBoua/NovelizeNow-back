@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\Like;
 use App\Entity\Order;
 use App\Entity\User;
+use App\Entity\LibraryEntry;
+use App\Entity\ReadingProgress;
 use App\Services\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -106,13 +108,35 @@ class AuthenticationController extends AbstractController
     #[Route("/me", name:"api_me", methods:["GET"]), SecurityMiddleware("is_granted('IS_AUTHENTICATED_FULLY')")]
     public function me()
     {
-        $user = $this->security->getUser();
-        $user = $this->serializer->normalize($user, null, ['groups' => ['user:me']]);
+        /** @var User $authUser */
+        $authUser = $this->security->getUser();
+        $user = $this->em->getRepository(User::class)->find($authUser->getId());
+
+        $data = $this->serializer->normalize($user, null, ['groups' => ['user:me']]);
+        $data['chaptersReadCount'] = $this->countChaptersRead($user);
+        $data['followedNovelsCount'] = $this->em->getRepository(LibraryEntry::class)->count(['user' => $user]);
 
         return new JsonResponse(
-            $user,
+            $data,
             JsonResponse::HTTP_OK
         );
+    }
+
+    private function countChaptersRead(User $user): int
+    {
+        $count = 0;
+        $progressList = $this->em->getRepository(ReadingProgress::class)->findBy(['user' => $user]);
+        foreach ($progressList as $progress) {
+            $chapter = $progress->getChapter();
+            $publishedChapters = $progress->getNovel()->getPublishedChapters();
+            foreach ($publishedChapters as $index => $ch) {
+                if ($ch->getId() === $chapter->getId()) {
+                    $count += $index + 1;
+                    break;
+                }
+            }
+        }
+        return $count;
     }
 
     #[Route("/me", name:"api_update_me", methods:["POST"]), SecurityMiddleware("is_granted('IS_AUTHENTICATED_FULLY')")]
@@ -138,12 +162,52 @@ class AuthenticationController extends AbstractController
             }
             $user->setUsername($data->get('username'));
         }
+        if ($data->has('bio')) {
+            $user->setBio($data->get('bio'));
+        }
 
         if ($files->get('avatar')) {
             $avatar = $files->get('avatar');
             $destination = '/uploads/avatars';
             $image = $this->fileUploadService->imageUpload($avatar, $destination);
             $user->setAvatar($image);
+        }
+
+        $this->em->persist($user);
+        $this->em->flush();
+
+        $user = $this->serializer->normalize($user, null, ['groups' => ['user:me']]);
+
+        return new JsonResponse($user, JsonResponse::HTTP_OK);
+    }
+
+    #[Route("/me/credentials", name:"api_update_credentials", methods:["POST"]), SecurityMiddleware("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function updateCredentials(Request $request, UserPasswordHasherInterface $passwordHasher)
+    {
+        /** @var User $authUser */
+        $authUser = $this->security->getUser();
+        $user = $this->em->getRepository(User::class)->find($authUser->getId());
+
+        $data = json_decode($request->getContent(), true) ?? [];
+        $currentPassword = $data['current_password'] ?? '';
+
+        if (!$currentPassword || !$passwordHasher->isPasswordValid($user, $currentPassword)) {
+            return new JsonResponse(['message' => "Mot de passe actuel incorrect."], JsonResponse::HTTP_FORBIDDEN);
+        }
+
+        if (!empty($data['email']) && $data['email'] !== $user->getEmail()) {
+            $existing = $this->em->getRepository(User::class)->findOneBy(['email' => $data['email']]);
+            if ($existing && $existing->getId() !== $user->getId()) {
+                return new JsonResponse(['message' => "Cette adresse e-mail est déjà utilisée."], JsonResponse::HTTP_CONFLICT);
+            }
+            $user->setEmail($data['email']);
+        }
+
+        if (!empty($data['new_password'])) {
+            if (strlen($data['new_password']) < 8) {
+                return new JsonResponse(['message' => "Le nouveau mot de passe doit contenir au moins 8 caractères."], JsonResponse::HTTP_BAD_REQUEST);
+            }
+            $user->setPassword($passwordHasher->hashPassword($user, $data['new_password']));
         }
 
         $this->em->persist($user);

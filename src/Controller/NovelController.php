@@ -7,9 +7,14 @@ use Exception;
 use App\Entity\Image;
 use App\Entity\Novel;
 use App\Entity\Order;
+use App\Entity\Category;
 use App\Entity\Comment;
 use App\Entity\UserNovel;
 use App\Entity\NovelImage;
+use App\Entity\CommentLike;
+use App\Entity\LibraryEntry;
+use App\Entity\ReadingProgress;
+use App\Entity\Follow;
 use App\Repository\UserRepository;
 use App\Repository\NovelRepository;
 use App\Services\FileUploadService;
@@ -75,7 +80,9 @@ class NovelController extends AbstractController
 
         $novel->setResume($data->get('resume'));
         $novel->setPrice($data->get('price'));
-        $novel->setStatus($data->get('status'));
+        if (!$this->applyRhythmAndProgress($novel, $data)) {
+            return $this->json(['error' => 'Rythme ou état invalide.'], 400);
+        }
         $novel->setDateCreation(new DateTime());
         $errors = $validator->validate($novel);
         if (count($errors) > 0) {
@@ -121,20 +128,38 @@ class NovelController extends AbstractController
         }
         $search = $request->query->get('search');
         $novels = $this->novelRepository->search($search);
+        $categories = $this->em->getRepository(Category::class)->createQueryBuilder('c')
+            ->select('c.id, c.name, c.icon')
+            ->where('c.name LIKE :val')
+            ->setParameter('val', '%'.$search.'%')
+            ->orderBy('c.name', 'ASC')
+            ->setMaxResults(3)
+            ->getQuery()
+            ->getArrayResult();
 
-        if (!$novels) {
-            return $this->json(['error' => 'No found'], 404);
-        }
+        // Only people with a published novel have an author page to link to.
+        $authors = $this->userRepository->createQueryBuilder('u')
+            ->select('u.id, u.name, u.lastname, a.filepath AS avatar, COUNT(DISTINCT n.id) AS novelCount')
+            ->join('u.userNovels', 'un', 'WITH', "un.relation = 'author'")
+            ->join('un.novel', 'n', 'WITH', 'n.publishedAt IS NOT NULL')
+            ->leftJoin('u.avatar', 'a')
+            ->where("CONCAT(CONCAT(u.name, ' '), u.lastname) LIKE :val OR u.username LIKE :val")
+            ->setParameter('val', '%'.$search.'%')
+            ->groupBy('u.id')
+            ->addGroupBy('a.id')
+            ->setMaxResults(3)
+            ->getQuery()
+            ->getArrayResult();
 
-        $novels = $serializerInterface->serialize($novels, 'json', ['groups' => 'novel:get']);
-        return new JsonResponse($novels, 200,  [], true);
+        $novels = json_decode($serializerInterface->serialize($novels, 'json', ['groups' => 'novel:get']));
+        return $this->json(['novels' => $novels, 'categories' => $categories, 'authors' => $authors]);
     }
 
     #[Route('/{id}', name: 'get_novel', methods: ['GET'])]
     public function get($id, SerializerInterface $serializerInterface)
     {
         $novel = $this->novelRepository->find($id);
-        if (!$novel) {
+        if (!$novel || !$this->canView($novel)) {
             return $this->json(['error' => 'No found id: '. $id], 404);
         }
         $novel = $serializerInterface->serialize($novel, 'json', ['groups' => 'novel:get']);
@@ -145,16 +170,17 @@ class NovelController extends AbstractController
     public function getBySlug($slug, SerializerInterface $serializerInterface)
     {
         $novel = $this->novelRepository->findOneBy(['slug' => $slug]);
-        if (!$novel) {
+        if (!$novel || !$this->canView($novel)) {
             return $this->json(['error' => 'No found id: '. $slug], 404);
         }
-
-        
 
         $novel = $serializerInterface->serialize($novel, 'json', ['groups' => 'novel:get']);
         $novel = json_decode($novel);
         $novel->isAuthor = false;
         $novel->userBought = false;
+        $novel->inLibrary = false;
+        $novel->readingProgress = null;
+        $novel->author->isFollowing = false;
         /** @var \App\Entity\User $user */
         $user = $this->security->getUser();
         if($user) {
@@ -163,28 +189,76 @@ class NovelController extends AbstractController
                 $novel->isAuthor = true;
             }
 
+            $follow = $this->em->getRepository(Follow::class)->findOneBy([
+                'follower' => $user->getId(),
+                'author' => $novel->author->id,
+            ]);
+            $novel->author->isFollowing = (bool) $follow;
+
             $order = $this->em->getRepository(Order::class)->findOneBy([
-                'user' => $user->getId(), 
+                'user' => $user->getId(),
                 'novel' => $novel->id
             ]);
             if ($order) {
                 $novel->userBought = true;
             }
+
+            $libraryEntry = $this->em->getRepository(LibraryEntry::class)->findOneBy([
+                'user' => $user->getId(),
+                'novel' => $novel->id,
+            ]);
+            $novel->inLibrary = (bool) $libraryEntry;
+
+            $progress = $this->em->getRepository(ReadingProgress::class)->findOneBy([
+                'user' => $user->getId(),
+                'novel' => $novel->id,
+            ]);
+            if ($progress) {
+                $chapterList = $novel->isAuthor ? $novel->chapters : $novel->publishedChapters;
+                foreach ($chapterList as $index => $ch) {
+                    if ($ch->id === $progress->getChapter()->getId()) {
+                        $novel->readingProgress = [
+                            'chapterId' => $ch->id,
+                            'chapterTitle' => $ch->title,
+                            'chapterIndex' => $index,
+                        ];
+                        break;
+                    }
+                }
+            }
         }
 
         $novel->comments = $this->em->getRepository(Comment::class)->findBy([
             'novel' => $novel->id,
-            'comment' => null
+            'comment' => null,
+            'chapter' => null,
         ], ['id' => 'DESC']);
+
+        $likedCommentIds = [];
+        if ($user) {
+            $allCommentIds = array_map(fn($c) => $c->getId(), $novel->comments);
+            foreach ($this->em->getRepository(Comment::class)->findBy(['comment' => $allCommentIds]) as $reply) {
+                $allCommentIds[] = $reply->getId();
+            }
+            if ($allCommentIds) {
+                foreach ($this->em->getRepository(CommentLike::class)->findBy(['user' => $user->getId(), 'comment' => $allCommentIds]) as $commentLike) {
+                    $likedCommentIds[] = $commentLike->getComment()->getId();
+                }
+            }
+        }
 
         foreach ($novel->comments as $key => $comment) {
             $comment = json_decode($serializerInterface->serialize($comment, 'json', ['groups' => 'novel:get']));
+            $comment->isLiked = in_array($comment->id, $likedCommentIds);
 
             $comment->comments = $this->em->getRepository(Comment::class)->findBy([
                     'comment' => $comment->id
                 ], ['id' => 'DESC']);
 
             $comment->comments = json_decode($serializerInterface->serialize($comment->comments, 'json', ['groups' => 'novel:get']));
+            foreach ($comment->comments as $reply) {
+                $reply->isLiked = in_array($reply->id, $likedCommentIds);
+            }
 
             $novel->comments[$key] = $comment;
         }
@@ -196,7 +270,10 @@ class NovelController extends AbstractController
     #[Route('/', name: 'get_all_novel', methods: ['GET'])]
     public function getAll(SerializerInterface $serializerInterface)
     {
-        $novels = $this->novelRepository->findAll();
+        $novels = $this->novelRepository->createQueryBuilder('n')
+            ->where('n.publishedAt IS NOT NULL')
+            ->getQuery()
+            ->getResult();
         $novels = $serializerInterface->serialize($novels, 'json', ['groups' => 'novel:get']);
         return new JsonResponse($novels, 200,  [], true);
     }
@@ -222,7 +299,9 @@ class NovelController extends AbstractController
         $novel->setTitle($data->get('title'));
         $novel->setResume($data->get('resume'));
         $novel->setPrice($data->get('price'));
-        $novel->setStatus($data->get('status'));      
+        if (!$this->applyRhythmAndProgress($novel, $data)) {
+            return $this->json(['error' => 'Rythme ou état invalide.'], 400);
+        }
         // handle update cover image
         if ($files->get('cover')) {
             $cover = $files->get('cover');
@@ -239,15 +318,28 @@ class NovelController extends AbstractController
         $categories = $data->all('category');
         $this->setNoveltCategories($novel, $categories);
 
-        if ($data->get('status')) {
-            $novel->setStatus($data->get('status')); 
-        }
-        
         $novel->setDateUpdate(new DateTime());
         $this->em->persist($novel);
         $this->em->flush();
         $novel = $serializerInterface->serialize($novel, 'json', ['groups' => 'novel:edit']);
         return new JsonResponse($novel, 200,  [], true);
+    }
+
+    #[Route('/{id}/visibility', name: 'toggle_novel_visibility', methods: ['POST']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function toggleVisibility($id)
+    {
+        $novel = $this->novelRepository->find($id);
+        if (!$novel) {
+            return $this->json(['error' => 'No found id: '. $id], 404);
+        }
+        if (!$this->novelRelationService->isUserAuthorized($novel, $this->security->getUser())) {
+            return $this->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $novel->setPublishedAt($novel->isPublished() ? null : new DateTime());
+        $this->em->flush();
+
+        return $this->json(['publishedAt' => $novel->getPublishedAt()], 200);
     }
 
     #[Route('/{id}', name: 'delete_novel', methods: ['DELETE']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
@@ -268,6 +360,31 @@ class NovelController extends AbstractController
         $this->em->flush();
 
         return $this->json(['response' => 'Deleted succesfully'], 200);
+    }
+
+    private function canView(Novel $novel): bool
+    {
+        return $novel->isPublished() || $this->novelRelationService->isUserAuthorized($novel, $this->security->getUser());
+    }
+
+    private function applyRhythmAndProgress(Novel $novel, $data): bool
+    {
+        $progress = $data->get('progress', $novel->getProgress() ?? 'ongoing');
+        $rhythm = $data->get('rhythm', $novel->getRhythm()) ?: null;
+        $releaseDay = $data->get('releaseDay', $novel->getReleaseDay()) ?: null;
+        $releaseDay = $releaseDay === null ? null : (int) $releaseDay;
+
+        if (!in_array($progress, ['ongoing', 'paused', 'completed'], true)
+            || ($rhythm !== null && !in_array($rhythm, ['weekly', 'biweekly', 'irregular'], true))
+            || ($releaseDay !== null && ($releaseDay < 1 || $releaseDay > 7))) {
+            return false;
+        }
+
+        $novel->setProgress($progress);
+        $novel->setRhythm($rhythm);
+        $novel->setReleaseDay(in_array($rhythm, ['weekly', 'biweekly'], true) ? $releaseDay : null);
+
+        return true;
     }
 
     private function findSlug($slug, $int = 1){

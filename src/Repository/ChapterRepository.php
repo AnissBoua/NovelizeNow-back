@@ -39,6 +39,53 @@ class ChapterRepository extends ServiceEntityRepository
         }
     }
 
+    public function findRecentPublishedByAuthor(int $authorId, int $limit): array
+    {
+        return $this->createQueryBuilder('c')
+            ->join('c.novel', 'n')
+            ->join('n.userNovels', 'un', 'WITH', "un.relation = 'author'")
+            ->where('un.user = :author')
+            ->andWhere('n.publishedAt IS NOT NULL')
+            ->andWhere("c.status = 'published'")
+            ->setParameter('author', $authorId)
+            ->orderBy('c.dateCreation', 'DESC')
+            ->addOrderBy('c.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findNextScheduledByAuthor(int $authorId): ?Chapter
+    {
+        return $this->createQueryBuilder('c')
+            ->join('c.novel', 'n')
+            ->join('n.userNovels', 'un', 'WITH', "un.relation = 'author'")
+            ->where('un.user = :author')
+            ->andWhere('n.publishedAt IS NOT NULL')
+            ->andWhere("c.status = 'scheduled'")
+            ->setParameter('author', $authorId)
+            ->orderBy('c.publishAt', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function countPublishedInCategorySince(int $categoryId, \DateTimeInterface $since): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->join('c.novel', 'n')
+            ->join('n.categories', 'cat')
+            ->where('cat.id = :categoryId')
+            ->andWhere('n.publishedAt IS NOT NULL')
+            ->andWhere("c.status = 'published'")
+            ->andWhere('c.dateCreation >= :since')
+            ->setParameter('categoryId', $categoryId)
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     public function findLastChapters($limit, $offset = 0): array
     {
         /*
@@ -51,17 +98,18 @@ class ChapterRepository extends ServiceEntityRepository
             GROUP BY last_novel_id
         ) AS last_chapters ON last_chapters.last_id = chapter.id
         WHERE chapter.status = 'published'
-        AND novel.status = 'published'
+        AND novel.published_at IS NOT NULL
         ORDER BY chapter.id DESC;
         */
         $lastChapters = $this->createQueryBuilder('c')
-            ->select('MAX(c.id) AS last_chapter_id, n.id AS novel_id')
+            ->select('MAX(c.id) AS last_chapter_id, n.id AS novel_id, MAX(c.dateCreation) AS HIDDEN last_date')
             ->join('c.novel', 'n')
             ->andWhere('c.status = :status')
-            ->andWhere('n.status = :status')
+            ->andWhere('n.publishedAt IS NOT NULL')
             ->setParameter('status', 'published')
             ->groupBy('novel_id')
-            ->orderBy('last_chapter_id', 'DESC')
+            ->orderBy('last_date', 'DESC')
+            ->addOrderBy('last_chapter_id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit)
             ->getQuery()
@@ -74,7 +122,7 @@ class ChapterRepository extends ServiceEntityRepository
                 ->join('c.novel', 'n')
                 ->andWhere('c.id = :id')
                 ->andWhere('c.status = :status')
-                ->andWhere('n.status = :status')
+                ->andWhere('n.publishedAt IS NOT NULL')
                 ->setParameter('id', $chapter['last_chapter_id'])
                 ->setParameter('status', 'published')
                 ->getQuery()

@@ -56,6 +56,41 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->save($user, true);
     }
 
+    /**
+     * ranked by how many readers they share. Returns rows of [author_id, shared_readers].
+     */
+    public function findAuthorsAlsoRead(int $authorId, int $limit): array
+    {
+        $sql = "
+            SELECT un2.user_id AS author_id, COUNT(DISTINCT activity.user_id) AS shared_readers
+            FROM (
+                SELECT rp.user_id FROM reading_progress rp
+                    JOIN user_novel un ON un.novel_id = rp.novel_id AND un.relation = 'author'
+                    JOIN novel n ON n.id = rp.novel_id
+                    WHERE un.user_id = :author AND n.published_at IS NOT NULL AND rp.user_id <> :author
+                UNION
+                SELECT o.user_id FROM `order` o
+                    JOIN user_novel un ON un.novel_id = o.novel_id AND un.relation = 'author'
+                    JOIN novel n ON n.id = o.novel_id
+                    WHERE un.user_id = :author AND n.published_at IS NOT NULL AND o.user_id <> :author
+            ) readers
+            JOIN (
+                SELECT user_id, novel_id FROM reading_progress
+                UNION
+                SELECT user_id, novel_id FROM `order`
+            ) activity ON activity.user_id = readers.user_id
+            JOIN novel n2 ON n2.id = activity.novel_id AND n2.published_at IS NOT NULL
+            JOIN user_novel un2 ON un2.novel_id = n2.id AND un2.relation = 'author'
+            WHERE un2.user_id <> :author
+            GROUP BY un2.user_id
+            ORDER BY shared_readers DESC, un2.user_id ASC
+            LIMIT " . (int) $limit;
+
+        return $this->getEntityManager()->getConnection()
+            ->executeQuery($sql, ['author' => $authorId])
+            ->fetchAllAssociative();
+    }
+
 //    /**
 //     * @return User[] Returns an array of User objects
 //     */

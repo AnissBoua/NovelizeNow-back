@@ -47,6 +47,10 @@ class Offer
     #[Assert\NotBlank(message: "The active status is required")]
     private ?bool $active = null;
 
+    #[ORM\Column(nullable: true)]
+    #[Groups(['offer:get'])]
+    private ?int $bonus = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Groups(['offer:get'])]
     private ?\DateTimeInterface $date_start = null;
@@ -112,6 +116,18 @@ class Offer
     public function setActive(bool $active): self
     {
         $this->active = $active;
+
+        return $this;
+    }
+
+    public function getBonus(): ?int
+    {
+        return $this->bonus;
+    }
+
+    public function setBonus(?int $bonus): self
+    {
+        $this->bonus = $bonus;
 
         return $this;
     }

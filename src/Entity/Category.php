@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\CategoryRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -28,6 +29,16 @@ class Category
         maxMessage: "The name must contain at most {{ limit }} characters"
     )]
     private ?string $name = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(["category:get", "category:post", "home:categories"])]
+    #[Assert\Length(max: 300, maxMessage: "The description must contain at most {{ limit }} characters")]
+    private ?string $description = null;
+
+    // An Iconify icon name, e.g. "tabler:rocket".
+    #[ORM\Column(length: 60, nullable: true)]
+    #[Groups(["category:get", "category:post", "home:categories"])]
+    private ?string $icon = null;
 
     #[ORM\ManyToMany(targetEntity: Novel::class, inversedBy: 'categories')]
     #[Groups(["home:categories"])]
@@ -59,6 +70,30 @@ class Category
     public function setName(string $name): self
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): self
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getIcon(): ?string
+    {
+        return $this->icon;
+    }
+
+    public function setIcon(?string $icon): self
+    {
+        $this->icon = $icon;
 
         return $this;
     }

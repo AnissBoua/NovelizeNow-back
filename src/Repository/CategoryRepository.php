@@ -39,41 +39,57 @@ class CategoryRepository extends ServiceEntityRepository
         }
     }
 
-//    /**
-//     * @return Category[] Returns an array of Category objects
-//     */
-   public function findBestCategoriesNovels($value): array
-   {
-        $categories = $this->createQueryBuilder('c')
-            ->join('c.novel', 'n')
+    /**
+     * Every category with its number of published novels and the total likes on them, keyed by id.
+     */
+    public function findAllWithPublishedStats(): array
+    {
+        $rows = $this->createQueryBuilder('c')
+            ->select('c.id, c.name, c.icon, c.description, COUNT(DISTINCT n.id) AS novelCount')
+            ->leftJoin('c.novel', 'n', 'WITH', 'n.publishedAt IS NOT NULL')
             ->groupBy('c.id')
-            ->orderBy('COUNT(n.id)', 'DESC')
-            ->where('n.status = :status')
-            ->setParameter('status', 'published')
-            ->setMaxResults($value)
             ->getQuery()
-            ->getResult();
+            ->getArrayResult();
+
+        $likes = $this->createQueryBuilder('c')
+            ->select('c.id, COUNT(l.id) AS likesCount')
+            ->join('c.novel', 'n')
+            ->join('n.likes', 'l')
+            ->where('n.publishedAt IS NOT NULL')
+            ->groupBy('c.id')
+            ->getQuery()
+            ->getArrayResult();
+        $likesById = array_column($likes, 'likesCount', 'id');
 
         $result = [];
-        foreach ($categories as $key => $categorie) {
-            foreach ($categorie->getNovel()->toArray() as $novel) {
-                if ($novel->getStatus() !== 'published') {
-                    $categorie->removeNovel($novel);
-                }
-            }
-
-            $novelCount = count($categorie->getNovel()->toArray());
-
-            while (count($categorie->getNovel()->toArray()) > 4) {
-                $last = $categorie->getNovel()->last();
-                $categorie->removeNovel($last);
-            }
-
-            $categorie->setNovel(array_values($categorie->getNovel()->toArray()));
-            $result[] = ['category' => $categorie, 'novelCount' => $novelCount];
+        foreach ($rows as $row) {
+            $row['novelCount'] = (int) $row['novelCount'];
+            $row['likesCount'] = (int) ($likesById[$row['id']] ?? 0);
+            $result[$row['id']] = $row;
         }
         return $result;
-   }
+    }
+
+    /**
+     * Categories that most often share published novels with the given one.
+     */
+    public function findRelated(int $categoryId, int $limit): array
+    {
+        return $this->createQueryBuilder('c2')
+            ->select('c2.id, COUNT(DISTINCT n.id) AS shared')
+            ->join('c2.novel', 'n')
+            ->join('n.categories', 'c1')
+            ->where('c1.id = :id')
+            ->andWhere('c2.id <> :id')
+            ->andWhere('n.publishedAt IS NOT NULL')
+            ->setParameter('id', $categoryId)
+            ->groupBy('c2.id')
+            ->orderBy('shared', 'DESC')
+            ->addOrderBy('c2.id', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getArrayResult();
+    }
 
 //    public function findOneBySomeField($value): ?Category
 //    {

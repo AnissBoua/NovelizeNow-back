@@ -16,6 +16,7 @@ use Symfony\Component\Validator\Constraints\Date;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: NovelRepository::class)]
+#[ORM\Index(columns: ['published_at'], name: 'novel_published_at')]
 class Novel
 {
     #[ORM\Id]
@@ -58,13 +59,8 @@ class Novel
     #[Groups(["novel:get", "novel:edit", "user-novel:get", "home:get", "home:categories"])]
     private ?string $resume = null;
 
-    #[ORM\Column(type: 'string', columnDefinition: "ENUM('published', 'unpublished')")]
-    #[Assert\Choice(
-        choices: ['published', 'unpublished'],
-        message: "The status must be published or unpublished"
-    )]
-    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
-    private ?string $status = null;
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $publishedAt = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
@@ -99,6 +95,21 @@ class Novel
     #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
     private ?int $price = null;
 
+    #[ORM\Column(length: 20, options: ['default' => 'ongoing'])]
+    #[Assert\Choice(choices: ['ongoing', 'paused', 'completed'])]
+    #[Groups(["novel:get", "novel:edit", "user-novel:get"])]
+    private ?string $progress = 'ongoing';
+
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Assert\Choice(choices: ['weekly', 'biweekly', 'irregular'])]
+    #[Groups(["novel:get", "novel:edit"])]
+    private ?string $rhythm = null;
+
+    #[ORM\Column(type: Types::SMALLINT, nullable: true)]
+    #[Assert\Range(min: 1, max: 7)]
+    #[Groups(["novel:get", "novel:edit"])]
+    private ?int $releaseDay = null;
+
     #[ORM\OneToMany(mappedBy: 'novel', targetEntity: Comment::class), OrderBy(['id' => 'DESC'])]
     // #[Groups(["novel:get", "novel:edit"])]
     private Collection $comments;
@@ -132,6 +143,42 @@ class Novel
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getProgress(): ?string
+    {
+        return $this->progress;
+    }
+
+    public function setProgress(string $progress): self
+    {
+        $this->progress = $progress;
+
+        return $this;
+    }
+
+    public function getRhythm(): ?string
+    {
+        return $this->rhythm;
+    }
+
+    public function setRhythm(?string $rhythm): self
+    {
+        $this->rhythm = $rhythm;
+
+        return $this;
+    }
+
+    public function getReleaseDay(): ?int
+    {
+        return $this->releaseDay;
+    }
+
+    public function setReleaseDay(?int $releaseDay): self
+    {
+        $this->releaseDay = $releaseDay;
+
+        return $this;
     }
 
     #[Groups(["novel:get", "user-novel:get", "home:get", "home:categories"])]
@@ -349,16 +396,22 @@ class Novel
         return $this;
     }
 
-    public function getStatus(): ?string
+    #[Groups(["novel:get", "novel:edit", "user-novel:get", "home:get"])]
+    public function getPublishedAt(): ?string
     {
-        return $this->status;
+        return $this->publishedAt ? $this->publishedAt->format('Y-m-d H:i:s') : null;
     }
 
-    public function setStatus(string $status): self
+    public function setPublishedAt(?\DateTimeInterface $publishedAt): self
     {
-        $this->status = $status;
+        $this->publishedAt = $publishedAt;
 
         return $this;
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->publishedAt !== null;
     }
 
     /**
@@ -442,13 +495,25 @@ class Novel
     #[Groups(["user-novel:get", "home:get", "home:categories", "novel:get"])]
     public function getCommentsCount(): int
     {
-        return count($this->comments);
+        return $this->comments->filter(fn($c) => $c->getChapter() === null)->count();
     }
 
     #[Groups(["novel:get"])]
     public function getOrdersCount(): int
     {
         return count($this->orders);
+    }
+
+    #[Groups(["novel:get"])]
+    public function getWordCount(): int
+    {
+        $total = 0;
+        foreach ($this->chapters as $chapter) {
+            if ($chapter->getStatus() === 'published') {
+                $total += $chapter->getWordCount();
+            }
+        }
+        return $total;
     }
 
 }

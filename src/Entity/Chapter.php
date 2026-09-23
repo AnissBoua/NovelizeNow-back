@@ -9,6 +9,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ChapterRepository::class)]
+#[ORM\Index(columns: ['status', 'publish_at'], name: 'chapter_status_publish_at')]
 class Chapter
 {
     #[ORM\Id]
@@ -27,10 +28,13 @@ class Chapter
     )]
     private ?string $title = null;
 
-    #[ORM\Column(type:'string', columnDefinition: "ENUM('published', 'in_progress')")]
+    #[ORM\Column(type:'string', columnDefinition: "ENUM('published', 'in_progress', 'scheduled')")]
     #[Groups(["chapter:read", "novel:get"])]
-    #[Assert\Choice(choices: ['published', 'in_progress'])]
+    #[Assert\Choice(choices: ['published', 'in_progress', 'scheduled'])]
     private ?string $status = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $publishAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'chapters')]
     #[ORM\JoinColumn(onDelete: 'CASCADE')]
@@ -45,6 +49,10 @@ class Chapter
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(["chapter:read"])]
     private ?string $html = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(["chapter:read", "novel:get"])]
+    private ?\DateTimeInterface $dateCreation = null;
 
     public function getId(): ?int
     {
@@ -109,5 +117,37 @@ class Chapter
         $this->html = $html;
 
         return $this;
+    }
+
+    public function getDateCreation(): ?string
+    {
+        return $this->dateCreation ? $this->dateCreation->format('Y-m-d H:i:s') : null;
+    }
+
+    public function setDateCreation(\DateTimeInterface $dateCreation): self
+    {
+        $this->dateCreation = $dateCreation;
+
+        return $this;
+    }
+
+    #[Groups(["chapter:read", "novel:get"])]
+    public function getPublishAt(): ?string
+    {
+        return $this->publishAt ? $this->publishAt->format('Y-m-d H:i:s') : null;
+    }
+
+    public function setPublishAt(?\DateTimeInterface $publishAt): self
+    {
+        $this->publishAt = $publishAt;
+
+        return $this;
+    }
+
+    #[Groups(["chapter:read", "novel:get"])]
+    public function getWordCount(): int
+    {
+        $text = trim($this->content ?? '');
+        return $text === '' ? 0 : count(preg_split('/\s+/', $text));
     }
 }

@@ -5,7 +5,9 @@ namespace App\Controller;
 use Exception;
 use App\Entity\User;
 use App\Entity\Novel;
+use App\Entity\Chapter;
 use App\Entity\Comment;
+use App\Entity\CommentLike;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -53,12 +55,23 @@ class CommentController extends AbstractController
             }
         }
 
+        if (isset($data->chapter)) {
+            $chapter = $this->em->getRepository(Chapter::class)->find($data->chapter);
+            if (!$chapter || $chapter->getNovel()->getId() !== $novel->getId()) {
+                return $this->json(['error' => 'Chapter not found.'], Response::HTTP_NOT_FOUND);
+            }
+        }
+
         $comment = new Comment;
         $comment->setNovel($novel);
         $comment->setUser($user);
         $comment->setContent($data->content);
+        $comment->setDateCreation(new \DateTime());
         if (isset($parent)) {
             $comment->setComment($parent);
+        }
+        if (isset($chapter)) {
+            $comment->setChapter($chapter);
         }
 
         $this->em->persist($comment);
@@ -123,5 +136,35 @@ class CommentController extends AbstractController
         $this->em->flush();
 
         return $this->json(null, Response::HTTP_OK);
+    }
+
+    #[Route('/{id}/like', name: 'toggle_comment_like', methods: ['POST']), Security("is_granted('IS_AUTHENTICATED_FULLY')")]
+    public function toggleLike(int $id)
+    {
+        $comment = $this->em->getRepository(Comment::class)->find($id);
+        if(!$comment) {
+            return $this->json(['error' => 'Comment not found.'], Response::HTTP_NOT_FOUND);
+        }
+
+        /** @var \App\Entity\User $user */
+        $user = $this->security->getUser();
+        $user = $this->em->getRepository(User::class)->find($user->getId());
+
+        $existing = $this->em->getRepository(CommentLike::class)->findOneBy(['user' => $user, 'comment' => $comment]);
+        $liked = !$existing;
+
+        if ($existing) {
+            $this->em->remove($existing);
+        } else {
+            $like = new CommentLike();
+            $like->setUser($user);
+            $like->setComment($comment);
+            $this->em->persist($like);
+        }
+        $this->em->flush();
+
+        $likesCount = $this->em->getRepository(CommentLike::class)->count(['comment' => $comment]);
+
+        return $this->json(['liked' => $liked, 'likesCount' => $likesCount], Response::HTTP_OK);
     }
 }

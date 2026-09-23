@@ -77,6 +77,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     )]
     private ?string $username = null;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(["user:me", "novel:get"])]
+    #[Assert\Length(
+        max: 280,
+        maxMessage: "The bio must contain at most {{ limit }} characters"
+    )]
+    private ?string $bio = null;
+
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Transaction::class)]
     private Collection $transactions;
 
@@ -92,6 +100,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Comment::class)]
     private Collection $comments;
 
+    #[ORM\OneToMany(mappedBy: 'author', targetEntity: Follow::class, orphanRemoval: true)]
+    private Collection $followers;
+
+    #[ORM\OneToMany(mappedBy: 'follower', targetEntity: Follow::class, orphanRemoval: true)]
+    private Collection $following;
+
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     #[Groups(["user:me", "novel:get", "user-novel:get", 'comment:post', "home:get", "home:categories"])]
     #[Assert\NotBlank]
@@ -105,6 +119,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
         $this->orders = new ArrayCollection();
         $this->likes = new ArrayCollection();
         $this->comments = new ArrayCollection();
+        $this->followers = new ArrayCollection();
+        $this->following = new ArrayCollection();
     }
 
     public static function createFromPayload($id, array $payload): JWTUserInterface
@@ -117,11 +133,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     {
         $novelCount = 0;
         foreach ($this->userNovels as $userNovel) {
-            if ($userNovel->getNovel()->getStatus() === 'published') {
+            if ($userNovel->getNovel()->isPublished()) {
                 $novelCount++;
             }
         }
-        return $this->userNovels->count();
+        return $novelCount;
     }
 
     public function getId(): ?int
@@ -244,6 +260,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
     public function setUsername(?string $username): self
     {
         $this->username = $username;
+
+        return $this;
+    }
+
+    public function getBio(): ?string
+    {
+        return $this->bio;
+    }
+
+    public function setBio(?string $bio): self
+    {
+        $this->bio = $bio;
 
         return $this;
     }
@@ -433,5 +461,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JWTUser
             }
         }
         return count($authorIds);
+    }
+
+    #[Groups(["novel:get"])]
+    public function getTotalLikesReceived(): int
+    {
+        $total = 0;
+        foreach ($this->userNovels as $userNovel) {
+            if ($userNovel->getRelation() === 'author') {
+                $total += $userNovel->getNovel()->getLikesCount();
+            }
+        }
+        return $total;
+    }
+
+    #[Groups(["novel:get", "home:get", "home:categories"])]
+    public function getFollowersCount(): int
+    {
+        return $this->followers->count();
     }
 }
